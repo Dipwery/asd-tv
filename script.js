@@ -63,8 +63,10 @@ window.playChannel = function(url, name, type, element) {
     if (hls) hls.destroy();
 
     // ভিডিও এলিমেন্ট তৈরি (অটো-প্লের জন্য muted এবং playsinline জরুরি)
-    wrapper.innerHTML = '<video id="player" controls playsinline muted autoplay></video>';
+    wrapper.innerHTML = '<video id="player" controls playsinline  autoplay></video>';
     const video = document.getElementById('player');
+    enableMobileFullscreen(video);
+
 
     if (type === 'youtube') {
         wrapper.innerHTML = `<iframe src="https://www.youtube.com/embed/${url}?autoplay=1&mute=1" frameborder="0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen style="width:100%; height:100%; aspect-ratio:16/9; border-radius:12px;"></iframe>`;
@@ -143,3 +145,54 @@ window.filterChannels = function() {
         card.style.display = name.includes(input) ? 'flex' : 'none';
     });
 };
+/* ===============================
+   MOBILE ROTATE FULLSCREEN
+================================ */
+
+function enableMobileFullscreen(video) {
+    if (!video) return;
+
+    video.addEventListener('click', () => {
+        if (window.innerWidth <= 768 && !document.fullscreenElement) {
+            video.requestFullscreen?.();
+        }
+    });
+}
+
+window.addEventListener("orientationchange", () => {
+    const video = document.getElementById("player");
+    if (!video) return;
+
+    if (Math.abs(window.orientation) === 90 && !document.fullscreenElement) {
+        video.requestFullscreen?.();
+    }
+});
+
+/* ===============================
+   FULLSCREEN SWIPE CHANNEL CHANGE
+================================ */
+
+let touchStartX = 0;
+
+document.addEventListener("touchstart", e => {
+    touchStartX = e.changedTouches[0].screenX;
+});
+
+document.addEventListener("touchend", e => {
+    if (!document.fullscreenElement) return;
+
+    const diff = e.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(diff) < 60) return;
+
+    const cards = [...document.querySelectorAll(".channel-card")];
+    if (!cards.length) return;
+
+    let index = cards.findIndex(c => c.classList.contains("active"));
+    if (index === -1) index = 0;
+
+    if (diff < 0) {
+        cards[(index + 1) % cards.length].click();
+    } else {
+        cards[(index - 1 + cards.length) % cards.length].click();
+    }
+});

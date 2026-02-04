@@ -146,3 +146,10 @@ nav {
     nav { flex-wrap: wrap; }
     #channels-list { grid-template-columns: 1fr 1fr 1fr; }
 }
+video:fullscreen,
+iframe:fullscreen {
+    width: 100vw;
+    height: 100vh;
+    background: black;
+    object-fit: contain;
+}
