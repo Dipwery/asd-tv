@@ -1,145 +1,141 @@
-// ১. সুপাবেস কনফিগারেশন
 const supabaseUrl = 'https://dnelzlyuhhxloysstnlg.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuZWx6bHl1aGh4bG95c3N0bmxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4NTM4MjAsImV4cCI6MjA4MTQyOTgyMH0.jYdJM1FTJja_A5CdTN3C3FWlKd_0E1JgHyaM4767SLc';
 const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
 let hls, player;
 
-document.addEventListener('DOMContentLoaded', async () => {
-    const channelListContainer = document.getElementById('channels-list');
-
-    async function initApp() {
-        loadNotice();
-        fetchChannels();
-    }
-
-    async function loadNotice() {
-        const { data } = await _supabase.from('settings').select('value').eq('key', 'main_notice').maybeSingle();
-        if (data && data.value) {
-            const noticeBar = document.getElementById('notice-bar');
-            if (noticeBar) {
-                noticeBar.classList.remove('hidden');
-                document.getElementById('notice-text').innerText = data.value;
-            }
-        }
-    }
-
-    async function fetchChannels() {
-        let { data: channels, error } = await _supabase.from('channels').select('*').order('created_at', { ascending: true });
-        if (channels && channels.length > 0) {
-            displayChannels(channels);
-            playChannel(channels[0].url, channels[0].name); 
-        }
-    }
-
-    function displayChannels(channels) {
-        channelListContainer.innerHTML = channels.map(ch => `
-            <div class="channel-card" onclick="playChannel('${ch.url}', '${ch.name}', this)" data-name="${ch.name}">
-                <div class="channel-thumb">
-                    <img src="${ch.logo || 'https://via.placeholder.com/80'}" alt="${ch.name}">
-                    <div class="playing-overlay"><i class="fas fa-play"></i></div>
-                </div>
-                <div class="channel-info"><h4>${ch.name}</h4></div>
-            </div>
-        `).join('');
-    }
-
+document.addEventListener('DOMContentLoaded', () => {
     initApp();
+    setupKeyboard(); 
 });
 
-// ২. প্লেয়ার ফাংশন (Next এবং Share কন্ট্রোলসহ)
-window.playChannel = function(url, name, element) {
-    const video = document.getElementById('player');
+async function initApp() {
+    loadNotice();
+    fetchChannels();
+}
+
+async function loadNotice() {
+    const { data } = await _supabase.from('settings').select('value').eq('key', 'main_notice').maybeSingle();
+    if (data?.value) {
+        const noticeBar = document.getElementById('notice-bar');
+        if (noticeBar) {
+            noticeBar.classList.remove('hidden');
+            document.getElementById('notice-text').innerText = data.value;
+        }
+    }
+}
+
+async function fetchChannels() {
+    let { data: channels } = await _supabase.from('channels').select('*').order('created_at', { ascending: true });
+    if (channels?.length > 0) {
+        displayChannels(channels);
+        // ডিফল্ট প্রথম চ্যানেল অটো-প্লে করার চেষ্টা
+        playChannel(channels[0].url, channels[0].name, channels[0].type || 'm3u8'); 
+    }
+}
+
+function displayChannels(channels) {
+    const container = document.getElementById('channels-list');
+    container.innerHTML = channels.map(ch => `
+        <div class="channel-card" onclick="playChannel('${ch.url}', '${ch.name}', '${ch.type || 'm3u8'}', this)" data-name="${ch.name}">
+            <div class="channel-thumb">
+                <img src="${ch.logo || 'https://via.placeholder.com/80'}" alt="${ch.name}">
+                <div class="playing-overlay"><i class="fas fa-play"></i></div>
+            </div>
+            <div class="channel-info"><h4>${ch.name}</h4></div>
+        </div>
+    `).join('');
+}
+
+window.playChannel = function(url, name, type, element) {
+    const wrapper = document.querySelector('.player-wrapper');
     document.getElementById('stream-title').innerText = name;
     
+    // চ্যানেল কার্ড হাইলাইট করা
     document.querySelectorAll('.channel-card').forEach(c => c.classList.remove('active'));
-    if(element) {
+    if (element) {
         element.classList.add('active');
         element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
+    // আগের প্লেয়ার মুছে ফেলা
+    if (player) player.destroy();
     if (hls) hls.destroy();
 
-    const plyrOptions = {
-        // আপনার চাহিদামত কন্ট্রোল লিস্ট
-        controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'settings', 'pip', 'fullscreen', 'share', 'next'],
-        settings: ['quality', 'speed'],
-        quality: {
-            default: 720,
-            options: [2160, 1080, 720, 480, 360],
-            forced: true,
-            onChange: (q) => {
-                if (hls) hls.currentLevel = q === 0 ? -1 : hls.levels.findIndex(l => l.height === q);
-            }
-        }
-    };
+    // ভিডিও এলিমেন্ট তৈরি (অটো-প্লের জন্য muted এবং playsinline জরুরি)
+    wrapper.innerHTML = '<video id="player" controls playsinline muted autoplay></video>';
+    const video = document.getElementById('player');
 
-    const setupPlayer = () => {
-        if (!player) {
-            player = new Plyr(video, plyrOptions);
+    if (type === 'youtube') {
+        wrapper.innerHTML = `<iframe src="https://www.youtube.com/embed/${url}?autoplay=1&mute=1" frameborder="0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen style="width:100%; height:100%; aspect-ratio:16/9; border-radius:12px;"></iframe>`;
+    } 
+    else if (type === 'iframe') {
+        wrapper.innerHTML = url.includes('<iframe') ? url : `<iframe src="${url}" frameborder="0" allow="autoplay" allowfullscreen style="width:100%; height:100%; aspect-ratio:16/9; border-radius:12px;"></iframe>`;
+    } 
+    else {
+        // HLS এবং রেজুলেশন সেটিংস
+        const defaultOptions = {
+            autoplay: true,
+            muted: true,
+            controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'settings', 'pip', 'fullscreen'],
+            settings: ['quality', 'speed'],
+        };
 
-            // 'Next' বাটনে ক্লিক করলে পরের চ্যানেল প্লে হবে
-            player.on('next', () => {
-                const cards = Array.from(document.querySelectorAll('.channel-card:not([style*="display: none"])'));
-                const currentIndex = cards.findIndex(c => c.classList.contains('active'));
-                const next = (currentIndex + 1) % cards.length;
-                if(cards[next]) cards[next].click();
+        if (Hls.isSupported()) {
+            hls = new Hls();
+            hls.loadSource(url);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                // রেজুলেশন লেভেলগুলো খুঁজে বের করা
+                const availableQualities = hls.levels.map((l) => l.height);
+                availableQualities.unshift(0); // 'Auto' অপশন যোগ করা
+
+                defaultOptions.quality = {
+                    default: 0,
+                    options: availableQualities,
+                    forced: true,
+                    onChange: (q) => {
+                        if (q === 0) hls.currentLevel = -1;
+                        else {
+                            hls.levels.forEach((level, index) => {
+                                if (level.height === q) hls.currentLevel = index;
+                            });
+                        }
+                    }
+                };
+                player = new Plyr(video, defaultOptions);
+                video.play().catch(() => console.log("Autoplay blocked by browser"));
             });
-
-            // 'Share' বাটনে ক্লিক করলে শেয়ার অপশন আসবে
-            player.on('share', () => {
-                if (navigator.share) {
-                    navigator.share({
-                        title: document.getElementById('stream-title').innerText,
-                        text: 'ASD TV তে লাইভ দেখুন!',
-                        url: window.location.href
-                    });
-                } else {
-                    alert("লিঙ্ক কপি করা হয়েছে: " + window.location.href);
-                }
-            });
-
-            player.on('enterfullscreen', () => {
-                if (screen.orientation && screen.orientation.lock) {
-                    screen.orientation.lock('landscape').catch(() => {});
-                }
-            });
-        }
-    };
-
-    if (Hls.isSupported()) {
-        hls = new Hls();
-        hls.loadSource(url);
-        hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            setupPlayer();
+        } else {
+            video.src = url;
+            player = new Plyr(video, defaultOptions);
             video.play().catch(() => {});
-        });
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = url;
-        setupPlayer();
-        video.play().catch(() => {});
+        }
     }
 };
 
-// ৩. কিবোর্ড কন্ট্রোল
-document.addEventListener('keydown', (e) => {
-    if (document.activeElement.tagName === 'INPUT') return;
-    const cards = Array.from(document.querySelectorAll('.channel-card:not([style*="display: none"])'));
-    const currentIndex = cards.findIndex(c => c.classList.contains('active'));
+function setupKeyboard() {
+    document.addEventListener('keydown', (e) => {
+        if (document.activeElement.tagName === 'INPUT') return;
 
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-        e.preventDefault();
-        const next = (currentIndex + 1) % cards.length;
-        if(cards[next]) cards[next].click();
-    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        const prev = (currentIndex - 1 + cards.length) % cards.length;
-        if(cards[prev]) cards[prev].click();
-    }
-});
+        const cards = Array.from(document.querySelectorAll('.channel-card'));
+        if (cards.length === 0) return;
 
-// ৪. সার্চ ফিল্টার
+        let currentIndex = cards.findIndex(c => c.classList.contains('active'));
+
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            let nextIndex = (currentIndex + 1) % cards.length;
+            cards[nextIndex].click();
+        } 
+        else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            let prevIndex = (currentIndex - 1 + cards.length) % cards.length;
+            cards[prevIndex].click();
+        }
+    });
+}
+
 window.filterChannels = function() {
     const input = document.getElementById('channelSearch').value.toLowerCase();
     document.querySelectorAll('.channel-card').forEach(card => {
