@@ -169,30 +169,38 @@ window.addEventListener("orientationchange", () => {
 });
 
 /* ===============================
-   FULLSCREEN SWIPE CHANNEL CHANGE
+   MOBILE ROTATE FULLSCREEN (UPDATED)
 ================================ */
 
-let touchStartX = 0;
+function enableMobileFullscreen(video) {
+    if (!video) return;
 
-document.addEventListener("touchstart", e => {
-    touchStartX = e.changedTouches[0].screenX;
-});
+    video.addEventListener('click', async () => {
+        if (window.innerWidth <= 768 && !document.fullscreenElement) {
+            try {
+                // ফুলস্ক্রিন রিকোয়েস্ট
+                if (video.requestFullscreen) {
+                    await video.requestFullscreen();
+                } else if (video.webkitRequestFullscreen) {
+                    await video.webkitRequestFullscreen();
+                }
 
-document.addEventListener("touchend", e => {
-    if (!document.fullscreenElement) return;
+                // স্ক্রিন রোটেট করা (Landscape মোডে লক করা)
+                if (screen.orientation && screen.orientation.lock) {
+                    await screen.orientation.lock('landscape').catch(err => {
+                        console.log("Orientation lock failed:", err);
+                    });
+                }
+            } catch (err) {
+                console.log("Fullscreen failed:", err);
+            }
+        }
+    });
+}
 
-    const diff = e.changedTouches[0].screenX - touchStartX;
-    if (Math.abs(diff) < 60) return;
-
-    const cards = [...document.querySelectorAll(".channel-card")];
-    if (!cards.length) return;
-
-    let index = cards.findIndex(c => c.classList.contains("active"));
-    if (index === -1) index = 0;
-
-    if (diff < 0) {
-        cards[(index + 1) % cards.length].click();
-    } else {
-        cards[(index - 1 + cards.length) % cards.length].click();
+// ফুলস্ক্রিন থেকে বের হয়ে গেলে আবার স্ক্রিন আনলক করা
+document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement && screen.orientation && screen.orientation.unlock) {
+        screen.orientation.unlock();
     }
 });
