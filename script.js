@@ -3,10 +3,16 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
 let hls, player;
+let channels = [];
+let currentChannelIndex = 0;
+let touchStartX = 0;
+let wasFullscreen = false; // Track fullscreen state across channel changes
+let bitrateMeter = null; // For tracking network bitrate
 
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
-    setupKeyboard(); 
+    setupKeyboard();
+    setupSwipeControls();
 });
 
 async function initApp() {
@@ -26,11 +32,11 @@ async function loadNotice() {
 }
 
 async function fetchChannels() {
-    let { data: channels } = await _supabase.from('channels').select('*').order('created_at', { ascending: true });
-    if (channels?.length > 0) {
+    let { data } = await _supabase.from('channels').select('*').order('created_at', { ascending: true });
+    channels = data || [];
+    if (channels.length > 0) {
         displayChannels(channels);
-        // ডিফল্ট প্রথম চ্যানেল অটো-প্লে করার চেষ্টা
-        playChannel(channels[0].url, channels[0].name, channels[0].type || 'm3u8'); 
+        playChannel(channels[0].url, channels[0].name, channels[0].type || 'm3u8');
     }
 }
 
@@ -39,7 +45,7 @@ function displayChannels(channels) {
     container.innerHTML = channels.map(ch => `
         <div class="channel-card" onclick="playChannel('${ch.url}', '${ch.name}', '${ch.type || 'm3u8'}', this)" data-name="${ch.name}">
             <div class="channel-thumb">
-                <img src="${ch.logo || 'https://via.placeholder.com/80'}" alt="${ch.name}">
+                <img src="${ch.logo || 'https://via.placeholder.com/90'}" alt="${ch.name}">
                 <div class="playing-overlay"><i class="fas fa-play"></i></div>
             </div>
             <div class="channel-info"><h4>${ch.name}</h4></div>
@@ -48,95 +54,241 @@ function displayChannels(channels) {
 }
 
 window.playChannel = function(url, name, type, element) {
+    // Store fullscreen state before changing channel
+    wasFullscreen = !!document.fullscreenElement;
+    if (wasFullscreen && document.exitFullscreen) {
+        document.exitFullscreen();
+    }
+    
+    currentChannelIndex = channels.findIndex(ch => ch.url === url);
+    
     const wrapper = document.querySelector('.player-wrapper');
     document.getElementById('stream-title').innerText = name;
     
-    // চ্যানেল কার্ড হাইলাইট করা
     document.querySelectorAll('.channel-card').forEach(c => c.classList.remove('active'));
     if (element) {
         element.classList.add('active');
         element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    // আগের প্লেয়ার মুছে ফেলা
     if (player) player.destroy();
     if (hls) hls.destroy();
 
-    // ভিডিও এলিমেন্ট তৈরি (অটো-প্লের জন্য muted এবং playsinline জরুরি)
-    wrapper.innerHTML = '<video id="player" controls playsinline  autoplay></video>';
-    const video = document.getElementById('player');
-    enableMobileFullscreen(video);
-
-
     if (type === 'youtube') {
-        wrapper.innerHTML = `<iframe src="https://www.youtube.com/embed/${url}?autoplay=1&mute=1" frameborder="0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen style="width:100%; height:100%; aspect-ratio:16/9; border-radius:12px;"></iframe>`;
+        wrapper.innerHTML = `<iframe src="https://www.youtube.com/embed/${url}?autoplay=1&mute=0" frameborder="0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen style="width:100%; height:100%; aspect-ratio:16/9; border-radius:20px;"></iframe>`;
+        setTimeout(() => {
+            const iframe = wrapper.querySelector('iframe');
+            enableMobileFullscreen(iframe);
+            if (wasFullscreen) {
+                reenterFullscreen(wrapper);
+            }
+        }, 0);
+        return;
     } 
     else if (type === 'iframe') {
-        wrapper.innerHTML = url.includes('<iframe') ? url : `<iframe src="${url}" frameborder="0" allow="autoplay" allowfullscreen style="width:100%; height:100%; aspect-ratio:16/9; border-radius:12px;"></iframe>`;
-    } 
-    else {
-        // HLS এবং রেজুলেশন সেটিংস
-        const defaultOptions = {
-            autoplay: true,
-            muted: true,
-            controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'settings', 'pip', 'fullscreen'],
-            settings: ['quality', 'speed'],
-        };
+        wrapper.innerHTML = url.includes('<iframe') ? url : `<iframe src="${url}" frameborder="0" allow="autoplay" allowfullscreen style="width:100%; height:100%; aspect-ratio:16/9; border-radius:20px;"></iframe>`;
+        setTimeout(() => {
+            const iframe = wrapper.querySelector('iframe');
+            enableMobileFullscreen(iframe);
+            if (wasFullscreen) {
+                reenterFullscreen(wrapper);
+            }
+        }, 0);
+        return;
+    }
 
-        if (Hls.isSupported()) {
-            hls = new Hls();
-            hls.loadSource(url);
-            hls.attachMedia(video);
-            hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                // রেজুলেশন লেভেলগুলো খুঁজে বের করা
-                const availableQualities = hls.levels.map((l) => l.height);
-                availableQualities.unshift(0); // 'Auto' অপশন যোগ করা
+    wrapper.innerHTML = '<video id="player" controls playsinline autoplay></video>';
+    const video = document.getElementById('player');
+    // try to start with sound (unmuted). Browsers may block autoplay with sound.
+    video.muted = false;
+    enableMobileFullscreen(video);
 
-                defaultOptions.quality = {
-                    default: 0,
-                    options: availableQualities,
-                    forced: true,
-                    onChange: (q) => {
-                        if (q === 0) hls.currentLevel = -1;
-                        else {
-                            hls.levels.forEach((level, index) => {
-                                if (level.height === q) hls.currentLevel = index;
-                            });
-                        }
+    const defaultOptions = {
+        autoplay: true,
+        muted: false,
+        controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'settings', 'pip', 'fullscreen'],
+        settings: ['quality', 'speed'],
+    };
+
+    if (Hls.isSupported()) {
+        hls = new Hls();
+        hls.loadSource(url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            // Limit qualities to max height 720
+            const MAX_HEIGHT = 7200;
+            // Build list of allowed quality heights (unique, sorted)
+            const allowedHeights = Array.from(new Set(hls.levels.filter(l => l.height && l.height <= MAX_HEIGHT).map(l => l.height))).sort((a,b) => a - b);
+            const availableQualities = [0, ...allowedHeights];
+            defaultOptions.quality = {
+                default: 0,
+                options: availableQualities,
+                forced: true,
+                onChange: (q) => {
+                    if (q === 0) {
+                        hls.currentLevel = -1; // auto
+                    } else {
+                        // find first level index matching the chosen height
+                        const idx = hls.levels.findIndex(l => l.height === q);
+                        if (idx !== -1) hls.currentLevel = idx;
                     }
-                };
-                player = new Plyr(video, defaultOptions);
-                video.play().catch(() => console.log("Autoplay blocked by browser"));
-            });
-        } else {
-            video.src = url;
+                }
+            };
+
+            // Enforce initial cap: choose the highest level index with height <= MAX_HEIGHT
+            let maxAllowedIndex = -1;
+            for (let i = hls.levels.length - 1; i >= 0; i--) {
+                const h = hls.levels[i].height;
+                if (!h || h <= MAX_HEIGHT) { maxAllowedIndex = i; break; }
+            }
+            if (maxAllowedIndex >= 0) {
+                hls.currentLevel = maxAllowedIndex;
+            } else {
+                hls.currentLevel = -1;
+            }
             player = new Plyr(video, defaultOptions);
-            video.play().catch(() => {});
-        }
+            if (wasFullscreen) {
+                reenterFullscreen(wrapper);
+            }
+            video.play().catch(() => console.log("Autoplay blocked"));
+        });
+    } else {
+        video.src = url;
+        player = new Plyr(video, defaultOptions);
+        video.play().catch(() => console.log("Autoplay blocked"));
     }
 };
 
+/* Swipe for channel change (works in fullscreen too) */
+function setupSwipeControls() {
+    const wrapper = document.querySelector('.player-wrapper');
+    wrapper.addEventListener('touchstart', e => {
+        touchStartX = e.touches[0].clientX;
+    }, { passive: true });
+
+    wrapper.addEventListener('touchend', e => {
+        const touchEndX = e.changedTouches[0].clientX;
+        const diff = touchEndX - touchStartX;
+
+        if (Math.abs(diff) > 60 && channels.length > 1) {
+            if (diff > 0) {
+                // Swipe right → previous channel
+                currentChannelIndex = (currentChannelIndex - 1 + channels.length) % channels.length;
+            } else {
+                // Swipe left → next channel
+                currentChannelIndex = (currentChannelIndex + 1) % channels.length;
+            }
+            const ch = channels[currentChannelIndex];
+            playChannel(ch.url, ch.name, ch.type || 'm3u8');
+        }
+    }, { passive: true });
+}
+
+function getPlayerElement() {
+    const video = document.getElementById('player');
+    if (video) return video;
+    const iframe = document.querySelector('.player-wrapper iframe');
+    return iframe || null;
+}
+
+function reenterFullscreen(wrapper) {
+    // Re-enter fullscreen on the wrapper or new player element
+    // Only attempt if user hasn't already exited fullscreen
+    setTimeout(async () => {
+        try {
+            if (!document.fullscreenElement && wrapper && (wrapper.requestFullscreen || wrapper.webkitRequestFullscreen)) {
+                if (wrapper.requestFullscreen) {
+                    await wrapper.requestFullscreen();
+                } else if (wrapper.webkitRequestFullscreen) {
+                    await wrapper.webkitRequestFullscreen();
+                }
+                // Lock orientation if on mobile
+                if (window.innerWidth <= 768 && screen.orientation?.lock) {
+                    await screen.orientation.lock('landscape').catch(() => {});
+                }
+            }
+        } catch (err) {
+            console.log("Failed to re-enter fullscreen:", err);
+        }
+    }, 100);
+}
+
 function setupKeyboard() {
-    document.addEventListener('keydown', (e) => {
-        if (document.activeElement.tagName === 'INPUT') return;
-
-        const cards = Array.from(document.querySelectorAll('.channel-card'));
-        if (cards.length === 0) return;
-
-        let currentIndex = cards.findIndex(c => c.classList.contains('active'));
+    const handler = e => {
+        if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+        if (channels.length === 0) return;
 
         if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
             e.preventDefault();
-            let nextIndex = (currentIndex + 1) % cards.length;
-            cards[nextIndex].click();
+            currentChannelIndex = (currentChannelIndex + 1) % channels.length;
+            const ch = channels[currentChannelIndex];
+            playChannel(ch.url, ch.name, ch.type || 'm3u8');
         } 
         else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
             e.preventDefault();
-            let prevIndex = (currentIndex - 1 + cards.length) % cards.length;
-            cards[prevIndex].click();
+            currentChannelIndex = (currentChannelIndex - 1 + channels.length) % channels.length;
+            const ch = channels[currentChannelIndex];
+            playChannel(ch.url, ch.name, ch.type || 'm3u8');
         }
-    });
+    };
+
+    // Use capture phase so keys are handled even when player element has focus (fullscreen)
+    window.addEventListener('keydown', handler, true);
 }
+
+function enableMobileFullscreen(video) {
+    if (!video) return;
+
+    // Allow clicking the player (video or iframe) or its wrapper to enter fullscreen on mobile
+    const target = video;
+    const enterFs = async () => {
+        if (window.innerWidth <= 768 && !document.fullscreenElement) {
+            try {
+                if (target.requestFullscreen) await target.requestFullscreen();
+                else if (target.webkitRequestFullscreen) await target.webkitRequestFullscreen();
+
+                if (screen.orientation?.lock) {
+                    await screen.orientation.lock('landscape').catch(() => {});
+                }
+            } catch (err) {
+                console.log("Fullscreen failed:", err);
+            }
+        }
+    };
+
+    target.addEventListener('click', enterFs, { passive: true });
+
+    // Also allow tapping the surrounding wrapper to trigger fullscreen
+    const wrapper = document.querySelector('.player-wrapper');
+    if (wrapper && wrapper !== target) wrapper.addEventListener('click', enterFs, { passive: true });
+}
+
+// Auto fullscreen on rotation to landscape
+window.addEventListener("orientationchange", async () => {
+    const player = getPlayerElement();
+    if (!player) return;
+
+    if (window.matchMedia("(orientation: landscape)").matches && !document.fullscreenElement) {
+        try {
+            const target = (player.requestFullscreen || player.webkitRequestFullscreen) ? player : document.querySelector('.player-wrapper');
+            if (target?.requestFullscreen) await target.requestFullscreen();
+            else if (target?.webkitRequestFullscreen) await target.webkitRequestFullscreen();
+
+            if (screen.orientation?.lock) {
+                await screen.orientation.lock('landscape').catch(() => {});
+            }
+        } catch (err) {
+            console.log("Auto fullscreen failed:", err);
+        }
+    }
+});
+
+// Unlock orientation when exit fullscreen
+document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement && screen.orientation?.unlock) {
+        screen.orientation.unlock();
+    }
+});
 
 window.filterChannels = function() {
     const input = document.getElementById('channelSearch').value.toLowerCase();
@@ -145,62 +297,3 @@ window.filterChannels = function() {
         card.style.display = name.includes(input) ? 'flex' : 'none';
     });
 };
-/* ===============================
-   MOBILE ROTATE FULLSCREEN
-================================ */
-
-function enableMobileFullscreen(video) {
-    if (!video) return;
-
-    video.addEventListener('click', () => {
-        if (window.innerWidth <= 768 && !document.fullscreenElement) {
-            video.requestFullscreen?.();
-        }
-    });
-}
-
-window.addEventListener("orientationchange", () => {
-    const video = document.getElementById("player");
-    if (!video) return;
-
-    if (Math.abs(window.orientation) === 90 && !document.fullscreenElement) {
-        video.requestFullscreen?.();
-    }
-});
-
-/* ===============================
-   MOBILE ROTATE FULLSCREEN (UPDATED)
-================================ */
-
-function enableMobileFullscreen(video) {
-    if (!video) return;
-
-    video.addEventListener('click', async () => {
-        if (window.innerWidth <= 768 && !document.fullscreenElement) {
-            try {
-                // ফুলস্ক্রিন রিকোয়েস্ট
-                if (video.requestFullscreen) {
-                    await video.requestFullscreen();
-                } else if (video.webkitRequestFullscreen) {
-                    await video.webkitRequestFullscreen();
-                }
-
-                // স্ক্রিন রোটেট করা (Landscape মোডে লক করা)
-                if (screen.orientation && screen.orientation.lock) {
-                    await screen.orientation.lock('landscape').catch(err => {
-                        console.log("Orientation lock failed:", err);
-                    });
-                }
-            } catch (err) {
-                console.log("Fullscreen failed:", err);
-            }
-        }
-    });
-}
-
-// ফুলস্ক্রিন থেকে বের হয়ে গেলে আবার স্ক্রিন আনলক করা
-document.addEventListener('fullscreenchange', () => {
-    if (!document.fullscreenElement && screen.orientation && screen.orientation.unlock) {
-        screen.orientation.unlock();
-    }
-});
