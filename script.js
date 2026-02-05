@@ -190,10 +190,7 @@ function getPlayerElement() {
     const iframe = document.querySelector('.player-wrapper iframe');
     return iframe || null;
 }
-
 function reenterFullscreen(wrapper) {
-    // Re-enter fullscreen on the wrapper or new player element
-    // Only attempt if user hasn't already exited fullscreen
     setTimeout(async () => {
         try {
             if (!document.fullscreenElement && wrapper && (wrapper.requestFullscreen || wrapper.webkitRequestFullscreen)) {
@@ -297,3 +294,36 @@ window.filterChannels = function() {
         card.style.display = name.includes(input) ? 'flex' : 'none';
     });
 };
+async function dataloop() {
+  const { data: users, error: usersError } = await _supabase
+    .from('user_stats')
+    .select('username, total_seconds')
+    .eq('username', '1') 
+
+  if (usersError) {
+    console.error('Select Error:', usersError)
+    return
+  }
+
+  if (!users || users.length === 0) {
+    console.warn('No user found')
+    return
+  }
+
+  const currentSeconds = users[0].total_seconds
+
+  const { data: updatedUser, error: updateError } = await _supabase
+    .from('user_stats')
+    .update({ total_seconds: currentSeconds + 1 })
+    .eq('username', '1') 
+    .select()
+
+  if (updateError) {
+    console.error('Update Error:', updateError)
+    return
+  }
+
+  console.log('Updated User:', updatedUser)
+}
+
+setInterval(dataloop, 1000)
