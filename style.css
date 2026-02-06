@@ -1,12 +1,12 @@
 :root {
-    --primary-color: #ff004f;
-    --primary-dark: #c7003d;
+    --primary-color: #66f859;
+    --primary-dark: #66f859;
     --bg-gradient: linear-gradient(135deg, #0a0015, #05060a);
     --card-bg: rgba(18, 20, 32, 0.7);
     --card-border: rgba(255, 0, 79, 0.15);
     --text-color: #f0f0f0;
     --accent-hover: rgba(28, 31, 51, 0.8);
-    --glow: 0 0 20px rgba(255, 0, 79, 0.4);
+    --glow: 0 0 20px rgba(102, 248, 89, 0.4);
 }
 
 body {
@@ -53,7 +53,7 @@ nav {
 .search-container input {
     width: 100%;
     background: rgba(18, 20, 32, 0.8);
-    border: 1px solid rgba(255, 0, 79, 0.2);
+    border: 1px solid rgba(31, 244, 106, 0.2);
     padding: 12px 15px 12px 45px;
     border-radius: 30px;
     color: white;
@@ -153,7 +153,7 @@ aside.sidebar {
 .playing-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(255, 0, 79, 0.35);
+    background: rgba(102, 248, 89, 0.35);
     display: none;
     place-items: center;
     border-radius: 50%;
