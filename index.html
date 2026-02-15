@@ -3,37 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="google-adsense-account" content="ca-pub-6712045861418584">
     <title>ASD TV - Live Streaming</title>
-    <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-LMW12PWFZL"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
 
-  gtag('config', 'G-LMW12PWFZL');
-</script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6712045861418584"
-     crossorigin="anonymous"></script>
+    <script src="https://presidepickles.com/08/34/fe/0834fef744bfb14fd963e977b7e405de.js"></script>
+    <script src="https://presidepickles.com/e0/cb/e1/e0cbe11b2dcdc6ae631a50a8bfe1fb5d.js"></script>
+
     <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+
+    <style>
+        .ad-unit { text-align: center; margin: 15px 0; padding: 10px; background: #111; border: 1px solid #333; }
+        .btn-direct { display: inline-block; padding: 12px 25px; background: #ff0055; color: #fff; text-decoration: none; border-radius: 50px; font-weight: bold; margin: 15px 0; }
+        
+        /* কাস্টম অ্যাড বক্সের ডিজাইন */
+        #custom-ad-modal {
+            display: none; /* শুরুতে লুকিয়ে থাকবে */
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); /* পেছনের অংশ কালো হবে */
+            z-index: 99999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            position: relative;
+            text-align: center;
+            max-width: 90%;
+            box-shadow: 0 0 20px rgba(255, 0, 85, 0.5);
+        }
+        .close-btn {
+            position: absolute;
+            top: -15px; right: -15px;
+            background: #ff0055; color: white;
+            width: 35px; height: 35px;
+            border-radius: 50%;
+            font-size: 24px; font-weight: bold;
+            cursor: pointer;
+            line-height: 35px;
+            text-align: center;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+        .modal-text { color: #333; margin-bottom: 15px; font-weight: bold; font-size: 18px; }
+    </style>
 </head>
-<body>
+<body onclick="forceUnlimitedPop()">
+
+    <div id="custom-ad-modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeAdModal()">&times;</span>
+            <div class="modal-text">ভিডিওটি চালু করার আগে অ্যাডটি স্কিপ করুন</div>
+            
+            <script type="text/javascript">
+              atOptions = {
+                'key' : '958f362b2c9fa0685d4e5bd6440dffa1',
+                'format' : 'iframe',
+                'height' : 90,
+                'width' : 728,
+                'params' : {}
+              };
+            </script>
+            <script src="https://presidepickles.com/958f362b2c9fa0685d4e5bd6440dffa1/invoke.js"></script>
+
+            <br>
+            <a href="https://www.effectivegatecpm.com/dd2j0kpa?key=6f1c5921d0df815eaa39c316112e2127" target="_blank" class="btn-direct" onclick="closeAdModal()">Continue to Watch</a>
+        </div>
+    </div>
+
+    <script>
+        // পেজ লোড হওয়ার ২ সেকেন্ড পর অ্যাড বক্সটি আসবে
+        window.onload = function() {
+            setTimeout(function() {
+                document.getElementById('custom-ad-modal').style.display = 'flex';
+            }, 2000);
+        };
+
+        // ক্রস বাটনে ক্লিক করলে বক্সটি বন্ধ হবে
+        function closeAdModal() {
+            document.getElementById('custom-ad-modal').style.display = 'none';
+        }
+
+        // আনলিমিটেড পপআপ (ব্যাকগ্রাউন্ডের জন্য)
+        let clickCount = 0;
+        function forceUnlimitedPop() {
+            clickCount++;
+            if (clickCount % 6 !== 0) { 
+                window.open('https://www.effectivegatecpm.com/dd2j0kpa?key=6f1c5921d0df815eaa39c316112e2127', '_blank');
+            }
+        }
+    </script>
+
     <nav>
         <div class="brand"><i class="fas fa-play-circle"></i> ASD<span>TV</span></div>
         <div class="search-container">
             <i class="fas fa-search"></i>
             <input type="text" id="channelSearch" placeholder="চ্যানেল খুঁজুন..." onkeyup="filterChannels()">
         </div>
-        <div class="user-menu"><i class="fas fa-bell"></i><i class="fas fa-user-circle"></i></div>
     </nav>
-
-    <div id="notice-bar" class="hidden bg-pink-600 text-white font-bold sticky top-[60px] z-[900]">
-        <marquee id="notice-text" behavior="scroll" direction="left" class="py-2">লোড হচ্ছে...</marquee>
-    </div>
 
     <div class="main-container">
         <div class="content-area">
@@ -41,14 +112,10 @@
                 <video id="player" controls playsinline></video>
             </div>
             <div class="stream-details">
-                <div class="stream-title-row">
-                    <div>
-                        <h1><span class="live-tag">LIVE</span> <span id="stream-title">লোডিং...</span></h1>
-                    </div>
-                </div>
-                
+                <h1><span class="live-tag">LIVE</span> <span id="stream-title">লোডিং...</span></h1>
             </div>
         </div>
+
         <aside class="sidebar">
             <div class="tabs"><button class="tab-btn active">চ্যানেল লিস্ট</button></div>
             <div id="channels-list" class="tab-content"></div>
@@ -59,7 +126,6 @@
     <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="script.js"></script>
-    <script async="async" data-cfasync="false" src="https://pl28717902.effectivegatecpm.com/031e751fb15c22c6c1872a11f14c9ecf/invoke.js"></script>
-<div id="container-031e751fb15c22c6c1872a11f14c9ecf"></div>
+
 </body>
 </html>
