@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ASD TV - Live Streaming</title>
 
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-LMW12PWFZL"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-LMW12PWFZL');
+    </script>
+
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6712045861418584" crossorigin="anonymous"></script>
+
     <script src="https://presidepickles.com/08/34/fe/0834fef744bfb14fd963e977b7e405de.js"></script>
     <script src="https://presidepickles.com/e0/cb/e1/e0cbe11b2dcdc6ae631a50a8bfe1fb5d.js"></script>
 
@@ -16,12 +26,11 @@
         .ad-unit { text-align: center; margin: 15px 0; padding: 10px; background: #111; border: 1px solid #333; }
         .btn-direct { display: inline-block; padding: 12px 25px; background: #ff0055; color: #fff; text-decoration: none; border-radius: 50px; font-weight: bold; margin: 15px 0; }
         
-        /* কাস্টম অ্যাড বক্সের ডিজাইন */
         #custom-ad-modal {
-            display: none; /* শুরুতে লুকিয়ে থাকবে */
+            display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85); /* পেছনের অংশ কালো হবে */
+            background: rgba(0, 0, 0, 0.85);
             z-index: 99999;
             justify-content: center;
             align-items: center;
@@ -76,23 +85,21 @@
     </div>
 
     <script>
-        // পেজ লোড হওয়ার ২ সেকেন্ড পর অ্যাড বক্সটি আসবে
         window.onload = function() {
             setTimeout(function() {
                 document.getElementById('custom-ad-modal').style.display = 'flex';
             }, 2000);
         };
 
-        // ক্রস বাটনে ক্লিক করলে বক্সটি বন্ধ হবে
         function closeAdModal() {
             document.getElementById('custom-ad-modal').style.display = 'none';
         }
 
-        // আনলিমিটেড পপআপ (ব্যাকগ্রাউন্ডের জন্য)
         let clickCount = 0;
         function forceUnlimitedPop() {
             clickCount++;
-            if (clickCount % 6 !== 0) { 
+            // প্রতি ২ ক্লিকে ১ বার পপআপ (অতিরিক্ত বিরক্তিকর হওয়া থেকে বাঁচাতে % ৬ এর বদলে % ২ ভালো)
+            if (clickCount % 3 !== 0) { 
                 window.open('https://www.effectivegatecpm.com/dd2j0kpa?key=6f1c5921d0df815eaa39c316112e2127', '_blank');
             }
         }
