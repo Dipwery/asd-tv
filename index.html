@@ -5,13 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ASD TV - Live Streaming</title>
 
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-LMW12PWFZL"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-LMW12PWFZL');
+    </script>
+
     <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
     <style>
-        /* অ্যাড ইউনিটের স্টাইলগুলো বাদ দেওয়া হয়েছে */
         .live-tag {
             background: #ff0000;
             padding: 2px 8px;
@@ -51,10 +57,6 @@
     <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="script.js"></script>
-
-    <script>
-        // forceUnlimitedPop() এবং অ্যাড লোডার ফাংশনগুলো সম্পূর্ণ রিমুভ করা হয়েছে
-    </script>
 
 </body>
 </html>
