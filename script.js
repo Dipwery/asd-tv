@@ -96,6 +96,11 @@ window.playChannel = function(url, name, type, element) {
         }, 0);
         return;
     }
+    else if (type === 'tap') {
+        window.open(url, '_blank');
+        wrapper.innerHTML = `<div class="tap-placeholder"><p>Tap to open channel</p><button onclick="window.open('${url}', '_blank')" class="btn-gradient py-2 px-4 rounded-lg font-bold">Open ${name}</button></div>`;
+        return;
+    }
 
     wrapper.innerHTML = '<video id="player" controls playsinline autoplay></video>';
     const video = document.getElementById('player');
