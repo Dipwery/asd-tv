@@ -6,7 +6,7 @@
     --card-border: rgba(255, 0, 79, 0.15);
     --text-color: #f0f0f0;
     --accent-hover: rgba(28, 31, 51, 0.8);
-    --glow: 0 0 20px rgba(102, 248, 89, 0.4);
+    --glow: 0 0 20px rgba(38, 166, 26, 0.4);
 }
 
 body {
@@ -203,4 +203,16 @@ video:fullscreen, iframe:fullscreen {
     height: 100vh !important;
     object-fit: contain;
     background: black;
+}
+#reportButton {
+    margin-left: 20px;
+    padding: 8px 16px;
+    background-color: var(--primary-color);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+    background-color: #d90909;
 }

@@ -10,10 +10,24 @@ let wasFullscreen = false; // Track fullscreen state across channel changes
 let bitrateMeter = null; // For tracking network bitrate
 
 document.addEventListener('DOMContentLoaded', () => {
+    initProgressBar();
     initApp();
     setupKeyboard();
     setupSwipeControls();
 });
+
+function initProgressBar() {
+    const progressBar = document.querySelector('#progress-bar');
+    if (!progressBar) return;
+
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += Math.random() * 20;
+        if (progress > 100) progress = 100;
+        progressBar.style.width = progress + '%';
+        if (progress >= 100) clearInterval(interval);
+    }, 100);
+}
 
 async function initApp() {
     loadNotice();
@@ -327,3 +341,13 @@ async function dataloop() {
 }
 
 setInterval(dataloop, 1000)
+
+async function reportIssue() {
+    const channel = channels[currentChannelIndex];
+    const { data, error } = await _supabase.from('report')
+    .insert({
+        name: channel.name,
+    });
+    alert('Reported issue for channel: ' + channel.name + '. Thank you for your feedback!');
+}
+   

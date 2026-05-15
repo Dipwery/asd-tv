@@ -1,0 +1,29 @@
+body{
+    margin: 0;
+    background: black;
+    color: var(--text-color);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+}
+div{
+    color: aliceblue;
+    text-align: center;
+    text-justify: inter-word;
+}
+span{
+    color: #66f859
+}
+button{
+    background: #66f859;
+    color: rgb(2, 2, 2);
+    border: none;
+    padding: 12px 25px;
+    border-radius: 50px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 15px;
+    text-align: center;
+}
