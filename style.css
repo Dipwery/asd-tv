@@ -15,6 +15,9 @@ body {
     color: var(--text-color);
     font-family: 'Inter', sans-serif;
     min-height: 100vh;
+    background-image: url("pori.jpg");
+    background-size: cover;
+    background-position: center;
 }
 
 nav {
@@ -22,8 +25,10 @@ nav {
     justify-content: space-between;
     align-items: center;
     padding: 12px 5%;
-    background: rgba(5, 6, 10, 0.85);
-    backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(2px);
     border-bottom: 1px solid rgba(255, 0, 79, 0.1);
     position: sticky;
     top: 0;
@@ -40,6 +45,7 @@ nav {
     position: relative;
     width: 40%;
     max-width: 400px;
+    
 }
 
 .search-container i {
@@ -112,7 +118,9 @@ aside.sidebar {
 }
 
 .channel-card {
-    background: var(--card-bg);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(2px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border: 2px solid var(--card-border);
     border-radius: 16px;
     padding: 16px 10px;
@@ -179,7 +187,9 @@ aside.sidebar {
 }
 
 .live-tag {
-    background: var(--primary-color);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(71, 231, 53, 0.2);
     padding: 4px 10px;
     border-radius: 4px;
     font-size: 12px;
@@ -202,7 +212,9 @@ video:fullscreen, iframe:fullscreen {
     width: 100vw !important;
     height: 100vh !important;
     object-fit: contain;
-    background: black;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 #reportButton {
     margin-left: 20px;
