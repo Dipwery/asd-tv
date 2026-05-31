@@ -4,7 +4,7 @@ const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
 let hls, player;
 let channels = [];
-let currentChannelIndex = 0;
+let currentChannelIndex = 39;
 let touchStartX = 0;
 let wasFullscreen = false; // Track fullscreen state across channel changes
 let bitrateMeter = null; // For tracking network bitrate
@@ -50,7 +50,7 @@ async function fetchChannels() {
     channels = data || [];
     if (channels.length > 0) {
         displayChannels(channels);
-        playChannel(channels[0].url, channels[0].name, channels[0].type || 'm3u8');
+        playChannel(channels[38].url, channels[38].name, channels[38].type || 'm3u8');
     }
 }
 
