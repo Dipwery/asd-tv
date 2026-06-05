@@ -50,7 +50,7 @@ async function fetchChannels() {
     channels = data || [];
     if (channels.length > 0) {
         displayChannels(channels);
-        playChannel(channels[38].url, channels[38].name, channels[38].type || 'm3u8');
+        playChannel(channels[1].url, channels[1].name, channels[1].type || 'm3u8');
     }
 }
 
