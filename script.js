@@ -46,11 +46,23 @@ async function loadNotice() {
 }
 
 async function fetchChannels() {
-    let { data } = await _supabase.from('channels').select('*').order('created_at', { ascending: true });
+    // order('id') ব্যবহার করা হয়েছে যেন id অনুযায়ী সাজানো হয়
+    let { data, error } = await _supabase.from('channels').select('*').order('id', { ascending: true });
+    
+    if (error) {
+        console.error("Supabase Error:", error);
+        alert("ডাটাবেজ থেকে ডাটা আনা যাচ্ছে না! কনসোল (F12) চেক করুন।");
+        return;
+    }
+
     channels = data || [];
     if (channels.length > 0) {
         displayChannels(channels);
-        playChannel(channels[1].url, channels[1].name, channels[1].type || 'm3u8');
+        currentChannelIndex = 0; // প্রথম চ্যানেল সিলেক্ট করার জন্য
+        // প্রথম চ্যানেলটি প্লে করা
+        playChannel(channels[0].url, channels[0].name, channels[0].type || 'm3u8');
+    } else {
+        console.log("টেবিলে কোনো চ্যানেল পাওয়া যায়নি।");
     }
 }
 
