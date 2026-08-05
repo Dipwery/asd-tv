@@ -4,10 +4,9 @@ const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
 let hls, player;
 let channels = [];
-let currentChannelIndex = 39;
+let currentChannelIndex = 0;
 let touchStartX = 0;
-let wasFullscreen = false; // Track fullscreen state across channel changes
-let bitrateMeter = null; // For tracking network bitrate
+let wasFullscreen = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     initProgressBar();
@@ -46,7 +45,6 @@ async function loadNotice() {
 }
 
 async function fetchChannels() {
-    // order('id') ব্যবহার করা হয়েছে যেন id অনুযায়ী সাজানো হয়
     let { data, error } = await _supabase.from('channels').select('*').order('id', { ascending: true });
     
     if (error) {
@@ -58,8 +56,7 @@ async function fetchChannels() {
     channels = data || [];
     if (channels.length > 0) {
         displayChannels(channels);
-        currentChannelIndex = 0; // প্রথম চ্যানেল সিলেক্ট করার জন্য
-        // প্রথম চ্যানেলটি প্লে করা
+        currentChannelIndex = 0;
         playChannel(channels[0].url, channels[0].name, channels[0].type || 'm3u8');
     } else {
         console.log("টেবিলে কোনো চ্যানেল পাওয়া যায়নি।");
@@ -68,6 +65,7 @@ async function fetchChannels() {
 
 function displayChannels(channels) {
     const container = document.getElementById('channels-list');
+    if (!container) return;
     container.innerHTML = channels.map(ch => `
         <div class="channel-card" onclick="playChannel('${ch.url}', '${ch.name}', '${ch.type || 'm3u8'}', this)" data-name="${ch.name}">
             <div class="channel-thumb">
@@ -79,8 +77,15 @@ function displayChannels(channels) {
     `).join('');
 }
 
+// YouTube URL/ID থেকে ভিডিও আইডি বের করার ফাংশন (Error 153 ফিক্স করার জন্য)
+function getYouTubeId(url) {
+    if (!url) return '';
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|\/live\/)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : url;
+}
+
 window.playChannel = function(url, name, type, element) {
-    // Store fullscreen state before changing channel
     wasFullscreen = !!document.fullscreenElement;
     if (wasFullscreen && document.exitFullscreen) {
         document.exitFullscreen();
@@ -89,7 +94,8 @@ window.playChannel = function(url, name, type, element) {
     currentChannelIndex = channels.findIndex(ch => ch.url === url);
     
     const wrapper = document.querySelector('.player-wrapper');
-    document.getElementById('stream-title').innerText = name;
+    const titleEl = document.getElementById('stream-title');
+    if (titleEl) titleEl.innerText = name;
     
     document.querySelectorAll('.channel-card').forEach(c => c.classList.remove('active'));
     if (element) {
@@ -97,37 +103,31 @@ window.playChannel = function(url, name, type, element) {
         element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    if (player) player.destroy();
-    if (hls) hls.destroy();
+    if (player) {
+        if (typeof player.destroy === 'function') player.destroy();
+        player = null;
+    }
+    if (hls) {
+        hls.destroy();
+        hls = null;
+    }
 
+    // ১. ইউটিউব টাইপ হ্যান্ডেল করা
     if (type === 'youtube') {
-        wrapper.innerHTML = `<iframe src="https://www.youtube.com/embed/${url}?autoplay=1&mute=0" frameborder="0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen style="width:100%; height:100%; aspect-ratio:16/9; border-radius:20px;"></iframe>`;
-        setTimeout(() => {
-            const iframe = wrapper.querySelector('iframe');
-            enableMobileFullscreen(iframe);
-            if (wasFullscreen) {
-                reenterFullscreen(wrapper);
-            }
-        }, 0);
+        const videoId = getYouTubeId(url);
+        wrapper.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&enablejsapi=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width:100%; height:100%; aspect-ratio:16/9; border-radius:20px;"></iframe>`;
         return;
     } 
+    // ২. আইফ্রেমি টাইপ
     else if (type === 'iframe') {
         wrapper.innerHTML = url.includes('<iframe') ? url : `<iframe src="${url}" frameborder="0" allow="autoplay" allowfullscreen style="width:100%; height:100%; aspect-ratio:16/9; border-radius:20px;"></iframe>`;
-        setTimeout(() => {
-            const iframe = wrapper.querySelector('iframe');
-            enableMobileFullscreen(iframe);
-            if (wasFullscreen) {
-                reenterFullscreen(wrapper);
-            }
-        }, 0);
         return;
     }
 
+    // ৩. M3U8 / Live Stream টাইপ
     wrapper.innerHTML = '<video id="player" controls playsinline autoplay></video>';
     const video = document.getElementById('player');
-    // try to start with sound (unmuted). Browsers may block autoplay with sound.
     video.muted = false;
-    enableMobileFullscreen(video);
 
     const defaultOptions = {
         autoplay: true,
@@ -141,41 +141,7 @@ window.playChannel = function(url, name, type, element) {
         hls.loadSource(url);
         hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            // Limit qualities to max height 720
-            const MAX_HEIGHT = 7200;
-            // Build list of allowed quality heights (unique, sorted)
-            const allowedHeights = Array.from(new Set(hls.levels.filter(l => l.height && l.height <= MAX_HEIGHT).map(l => l.height))).sort((a,b) => a - b);
-            const availableQualities = [0, ...allowedHeights];
-            defaultOptions.quality = {
-                default: 0,
-                options: availableQualities,
-                forced: true,
-                onChange: (q) => {
-                    if (q === 0) {
-                        hls.currentLevel = -1; // auto
-                    } else {
-                        // find first level index matching the chosen height
-                        const idx = hls.levels.findIndex(l => l.height === q);
-                        if (idx !== -1) hls.currentLevel = idx;
-                    }
-                }
-            };
-
-            // Enforce initial cap: choose the highest level index with height <= MAX_HEIGHT
-            let maxAllowedIndex = -1;
-            for (let i = hls.levels.length - 1; i >= 0; i--) {
-                const h = hls.levels[i].height;
-                if (!h || h <= MAX_HEIGHT) { maxAllowedIndex = i; break; }
-            }
-            if (maxAllowedIndex >= 0) {
-                hls.currentLevel = maxAllowedIndex;
-            } else {
-                hls.currentLevel = -1;
-            }
             player = new Plyr(video, defaultOptions);
-            if (wasFullscreen) {
-                reenterFullscreen(wrapper);
-            }
             video.play().catch(() => console.log("Autoplay blocked"));
         });
     } else {
@@ -185,9 +151,9 @@ window.playChannel = function(url, name, type, element) {
     }
 };
 
-/* Swipe for channel change (works in fullscreen too) */
 function setupSwipeControls() {
     const wrapper = document.querySelector('.player-wrapper');
+    if (!wrapper) return;
     wrapper.addEventListener('touchstart', e => {
         touchStartX = e.touches[0].clientX;
     }, { passive: true });
@@ -198,10 +164,8 @@ function setupSwipeControls() {
 
         if (Math.abs(diff) > 60 && channels.length > 1) {
             if (diff > 0) {
-                // Swipe right → previous channel
                 currentChannelIndex = (currentChannelIndex - 1 + channels.length) % channels.length;
             } else {
-                // Swipe left → next channel
                 currentChannelIndex = (currentChannelIndex + 1) % channels.length;
             }
             const ch = channels[currentChannelIndex];
@@ -210,34 +174,8 @@ function setupSwipeControls() {
     }, { passive: true });
 }
 
-function getPlayerElement() {
-    const video = document.getElementById('player');
-    if (video) return video;
-    const iframe = document.querySelector('.player-wrapper iframe');
-    return iframe || null;
-}
-function reenterFullscreen(wrapper) {
-    setTimeout(async () => {
-        try {
-            if (!document.fullscreenElement && wrapper && (wrapper.requestFullscreen || wrapper.webkitRequestFullscreen)) {
-                if (wrapper.requestFullscreen) {
-                    await wrapper.requestFullscreen();
-                } else if (wrapper.webkitRequestFullscreen) {
-                    await wrapper.webkitRequestFullscreen();
-                }
-                // Lock orientation if on mobile
-                if (window.innerWidth <= 768 && screen.orientation?.lock) {
-                    await screen.orientation.lock('landscape').catch(() => {});
-                }
-            }
-        } catch (err) {
-            console.log("Failed to re-enter fullscreen:", err);
-        }
-    }, 100);
-}
-
 function setupKeyboard() {
-    const handler = e => {
+    window.addEventListener('keydown', e => {
         if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
         if (channels.length === 0) return;
 
@@ -253,65 +191,8 @@ function setupKeyboard() {
             const ch = channels[currentChannelIndex];
             playChannel(ch.url, ch.name, ch.type || 'm3u8');
         }
-    };
-
-    // Use capture phase so keys are handled even when player element has focus (fullscreen)
-    window.addEventListener('keydown', handler, true);
+    }, true);
 }
-
-function enableMobileFullscreen(video) {
-    if (!video) return;
-
-    // Allow clicking the player (video or iframe) or its wrapper to enter fullscreen on mobile
-    const target = video;
-    const enterFs = async () => {
-        if (window.innerWidth <= 768 && !document.fullscreenElement) {
-            try {
-                if (target.requestFullscreen) await target.requestFullscreen();
-                else if (target.webkitRequestFullscreen) await target.webkitRequestFullscreen();
-
-                if (screen.orientation?.lock) {
-                    await screen.orientation.lock('landscape').catch(() => {});
-                }
-            } catch (err) {
-                console.log("Fullscreen failed:", err);
-            }
-        }
-    };
-
-    target.addEventListener('click', enterFs, { passive: true });
-
-    // Also allow tapping the surrounding wrapper to trigger fullscreen
-    const wrapper = document.querySelector('.player-wrapper');
-    if (wrapper && wrapper !== target) wrapper.addEventListener('click', enterFs, { passive: true });
-}
-
-// Auto fullscreen on rotation to landscape
-window.addEventListener("orientationchange", async () => {
-    const player = getPlayerElement();
-    if (!player) return;
-
-    if (window.matchMedia("(orientation: landscape)").matches && !document.fullscreenElement) {
-        try {
-            const target = (player.requestFullscreen || player.webkitRequestFullscreen) ? player : document.querySelector('.player-wrapper');
-            if (target?.requestFullscreen) await target.requestFullscreen();
-            else if (target?.webkitRequestFullscreen) await target.webkitRequestFullscreen();
-
-            if (screen.orientation?.lock) {
-                await screen.orientation.lock('landscape').catch(() => {});
-            }
-        } catch (err) {
-            console.log("Auto fullscreen failed:", err);
-        }
-    }
-});
-
-// Unlock orientation when exit fullscreen
-document.addEventListener('fullscreenchange', () => {
-    if (!document.fullscreenElement && screen.orientation?.unlock) {
-        screen.orientation.unlock();
-    }
-});
 
 window.filterChannels = function() {
     const input = document.getElementById('channelSearch').value.toLowerCase();
@@ -320,46 +201,32 @@ window.filterChannels = function() {
         card.style.display = name.includes(input) ? 'flex' : 'none';
     });
 };
+
+// ইউজার টাইম ট্র্যাক করার লুপ
 async function dataloop() {
-  const { data: users, error: usersError } = await _supabase
-    .from('user_stats')
-    .select('username, total_seconds')
-    .eq('username', '1') 
+    const { data: users, error: usersError } = await _supabase
+        .from('user_stats')
+        .select('username, total_seconds')
+        .eq('username', '1');
 
-  if (usersError) {
-    console.error('Select Error:', usersError)
-    return
-  }
+    if (usersError || !users || users.length === 0) return;
 
-  if (!users || users.length === 0) {
-    console.warn('No user found')
-    return
-  }
+    const currentSeconds = users[0].total_seconds;
 
-  const currentSeconds = users[0].total_seconds
-
-  const { data: updatedUser, error: updateError } = await _supabase
-    .from('user_stats')
-    .update({ total_seconds: currentSeconds + 1 })
-    .eq('username', '1') 
-    .select()
-
-  if (updateError) {
-    console.error('Update Error:', updateError)
-    return
-  }
-
-  console.log('Updated User:', updatedUser)
+    await _supabase
+        .from('user_stats')
+        .update({ total_seconds: currentSeconds + 1 })
+        .eq('username', '1');
 }
-
-setInterval(dataloop, 1000)
+setInterval(dataloop, 1000);
 
 async function reportIssue() {
+    if (!channels[currentChannelIndex]) return;
     const channel = channels[currentChannelIndex];
-    const { data, error } = await _supabase.from('report')
-    .insert({
+    const { error } = await _supabase.from('report').insert({
         name: channel.name,
     });
-    alert('Reported issue for channel: ' + channel.name + '. Thank you for your feedback!');
+    if (!error) {
+        alert('Reported issue for channel: ' + channel.name + '. Thank you for your feedback!');
+    }
 }
-   
