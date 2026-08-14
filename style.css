@@ -15,7 +15,6 @@ body {
     color: var(--text-color);
     font-family: 'Inter', sans-serif;
     min-height: 100vh;
-    background-image: url("pori.jpg");
     background-size: cover;
     background-position: center;
 }
@@ -73,10 +72,13 @@ nav {
 
 .main-container {
     display: grid;
-    grid-template-columns: 1fr 380px;
+    grid-template-columns: 1.6fr 320px;
     gap: 24px;
     padding: 24px 5%;
+    transition: grid-template-columns .28s ease;
 }
+
+.sidebar{transition:opacity .2s ease;}
 
 .player-wrapper {
     background: #000;
@@ -85,6 +87,52 @@ nav {
     aspect-ratio: 16 / 9;
     box-shadow: 0 30px 70px rgba(255, 0, 79, 0.15), inset 0 0 30px rgba(0,0,0,0.6);
 }
+
+.player-wrapper{position:relative; display:flex; align-items:center; justify-content:center}
+.player-overlay{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none;
+}
+.player-loader{width:66px; height:66px; border-radius:50%; border:6px solid rgba(255,255,255,0.06); border-top-color:var(--primary-color); animation:spin 1s linear infinite; box-shadow:0 6px 30px rgba(102,248,89,0.12)}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* stream title marquee */
+.stream-details h1 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 20px;
+    color: #ffffff;
+    font-weight: 700;
+    margin: 0;
+}
+.stream-title-wrap{overflow:hidden; max-width:70%; position:relative}
+.stream-title{display:inline-block; white-space:nowrap; transform:translateX(0); transition:transform 10s linear}
+.stream-title.marquee{transform:translateX(calc(-100% - 20px))}
+
+/* channel list entrance */
+.channel-card{opacity:0; transform:translateY(10px) scale(.98); transition:transform .45s cubic-bezier(.2,.9,.2,1), opacity .45s}
+.channel-card.show{opacity:1; transform:none}
+.channel-card:nth-child(odd){--delay:calc(var(--i) * 40ms)}
+
+/* skeleton for player */
+.skeleton{background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.05), rgba(255,255,255,0.02)); animation:shimmer 1.6s infinite}
+@keyframes shimmer{0%{background-position:-200px 0}100%{background-position:200px 0}}
+
+/* subtle hover ripple */
+.channel-card:active{transform:scale(.985)}
+
+/* small tweaks */
+.stream-details{display:flex; align-items:center; gap:10px; margin-top:12px}
+
+/* Ensure video/iframe always fill the wrapper */
+.player-wrapper video, .player-wrapper iframe{
+    width:100%;
+    height:100%;
+    display:block;
+    object-fit:contain;
+}
+
 
 aside.sidebar {
     background: rgba(18, 20, 32, 0.6);
@@ -95,13 +143,14 @@ aside.sidebar {
 
 #channels-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 12px;
     padding: 16px;
     overflow-y: auto;
     max-height: calc(100vh - 180px);
     scrollbar-width: thin;
     scrollbar-color: var(--primary-color) transparent;
+    min-height: 200px;
 }
 
 #channels-list::-webkit-scrollbar {
@@ -120,14 +169,17 @@ aside.sidebar {
 .channel-card {
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(2px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
     border: 2px solid var(--card-border);
     border-radius: 16px;
-    padding: 16px 10px;
+    padding: 12px 8px;
     cursor: pointer;
     transition: all 0.4s ease;
     backdrop-filter: blur(10px);
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .channel-card:hover {
@@ -172,10 +224,15 @@ aside.sidebar {
 
 .channel-info h4 {
     margin: 0;
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     font-weight: 700;
     text-align: center;
     line-height: 1.3;
+    color: #ffffff;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    width: 100%;
+    max-width: 100px;
 }
 
 #notice-bar {
@@ -189,10 +246,12 @@ aside.sidebar {
 .live-tag {
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(71, 231, 53, 0.2);
-    padding: 4px 10px;
+    border: 1px solid rgba(71, 231, 53, 0.4);
+    padding: 6px 12px;
     border-radius: 4px;
     font-size: 12px;
+    font-weight: 700;
+    color: #ffffff;
     animation: pulse 1.5s infinite;
 }
 
@@ -218,13 +277,58 @@ video:fullscreen, iframe:fullscreen {
 }
 #reportButton {
     margin-left: 20px;
-    padding: 8px 16px;
-    background-color: var(--primary-color);
-    color: #fff;
+    padding: 10px 18px;
+    background-color: #d90909;
+    color: #ffffff;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
-    transition: background-color 0.3s ease;
-    background-color: #d90909;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: inline-block;
+    visibility: visible;
+    opacity: 1;
+}
+
+#reportButton:hover {
+    background-color: #ff1111;
+    transform: scale(1.05);
+}
+
+#focusBtn{
+    display:none;
+}
+
+.speed {
+    background: rgba(102, 248, 89, 0.08);
+    border: 1px solid rgba(102, 248, 89, 0.3);
+    padding: 8px 12px;
+    border-radius: 10px;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 13px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+    transition: transform .12s ease, opacity .2s ease;
+    opacity: 1;
+    min-width: 80px;
+    text-align: center;
+}
+.speed.hidden{opacity:0}
+
+/* Flow blob animation (liquid-like transfer) */
+.flow-blob{
+    position:fixed;
+    pointer-events:none;
+    border-radius:50%;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(102,248,89,0.9) 20%, rgba(102,248,89,0.85) 40%, rgba(102,248,89,0.6) 60%, rgba(0,0,0,0.15) 100%);
+    box-shadow: 0 10px 40px rgba(34,197,94,0.18), inset 0 -6px 18px rgba(0,0,0,0.12);
+    transform-origin:center center;
+    z-index:99999;
+    filter: blur(0.6px);
+}
+
+/* small ripple burst at destination */
+.flow-burst{
+    position:fixed; pointer-events:none; border-radius:50%; background:rgba(102,248,89,0.12); z-index:99998; mix-blend-mode:screen;
 }

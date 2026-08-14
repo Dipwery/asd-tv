@@ -1,19 +1,30 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>pori tv</title>
+    <title>ASD TV — স্বাগতম</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styl.css">
 </head>
 <body>
-    <div>
-        <img src="pori.jpg" alt="">
-        <h1>Welcome to <span>pori tv</span></h1>
-        <p>এখানে আপনার পছন্দের টেলিভিশন চ্যানেলগুলি পাবেন।</p>
-        <button onclick="window.location.href='tv.html'">Enter TV</button>
-    </div>
-    
+    <main class="welcome-hero" role="main">
+        <div class="hero-card">
+            <div class="logo">ASD <span>TV</span></div>
+            <h1 class="title">আপনার পছন্দের চ্যানেলগুলো এক জায়গায়</h1>
+            <p class="subtitle">লাইভ টিভি, বুকমার্ক, এবং হালনাগাদ সূচি — সবকিছু সহজেই।</p>
+            <div class="actions">
+                <a class="enter-btn" href="tv.html" title="টিভি প্লেয়ার খুলুন">টিভি দেখতে যান</a>
+                <button class="theme-toggle" id="themeToggle" aria-label="রাত/দিন মোড পরিবর্তন করুন" type="button">রাত/দিন</button>
+            </div>
+        </div>
+        <div class="bg-shapes" aria-hidden="true">
+            <span class="shape s1"></span>
+            <span class="shape s2"></span>
+            <span class="shape s3"></span>
+        </div>
+    </main>
+
     <script src="script.js"></script>
 </body>
 </html>
