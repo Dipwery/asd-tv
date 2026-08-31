@@ -12,25 +12,22 @@ html,body{height:100%}
 body{
     margin:0;
     font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-    background:linear-gradient(180deg,#071226 0%, #081426 60%);
     color:var(--text);
     min-height:100vh;
     display:flex;
     align-items:center;
     justify-content:center;
+    background-image:url(pori.jpg);
+    background-size:fill;
 }
 
 .welcome-hero{position:relative; width:100%; max-width:1080px; padding:40px}
 .hero-card{
     position:relative;
-    background:linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
     border-radius:18px;
     padding:48px 36px;
     text-align:center;
-    box-shadow:0 12px 40px rgba(3,10,18,0.6);
-    backdrop-filter: blur(8px);
     transform:none;
-    opacity:1;
     transition:all 600ms cubic-bezier(.2,.9,.3,1);
     animation: slideIn 600ms cubic-bezier(.2,.9,.3,1);
 }
@@ -46,7 +43,7 @@ body{
 .title{font-size:36px; margin:16px 0 12px; line-height:1.2; color:#ffffff; font-weight:700}
 .subtitle{color:#d0d8e0; margin-bottom:28px; font-size:16px; line-height:1.5}
 
-.actions{display:flex; gap:12px; justify-content:center; align-items:center; flex-wrap:wrap}
+
 .enter-btn{
     display:inline-block;
     padding:14px 32px;
@@ -66,68 +63,5 @@ body{
 .enter-btn:active{transform:translateY(2px); box-shadow:0 4px 16px rgba(102,248,89,0.2)}
 .enter-btn:hover{box-shadow:0 14px 40px rgba(102,248,89,0.35); transform:translateY(-3px)}
 
-.theme-toggle{
-    background:rgba(255,255,255,0.06);
-    border:1px solid rgba(255,255,255,0.15);
-    color:#ffffff;
-    padding:12px 18px;
-    border-radius:10px;
-    cursor:pointer;
-    font-weight:600;
-    font-size:14px;
-    transition:all .3s ease;
-    white-space:nowrap;
-}
-.theme-toggle:hover{
-    background:rgba(255,255,255,0.12);
-    border-color:rgba(255,255,255,0.3);
-    transform:translateY(-2px);
-}
 
-.bg-shapes{position:absolute; inset:0; pointer-events:none}
-.shape{position:absolute; border-radius:50%; filter:blur(60px); opacity:0.7}
-.s1{width:360px;height:360px; left:-120px; top:-80px; background:linear-gradient(45deg,#1b6fff55,#6df2a855)}
-.s2{width:260px;height:260px; right:-60px; bottom:-80px; background:linear-gradient(45deg,#ff6b6b44,#ffd56b44)}
-.s3{width:140px;height:140px; left:50%; top:-40px; transform:translateX(-50%); background:linear-gradient(45deg,#8a6bff55,#66f85955)}
 
-@media (max-width:768px){
-    .hero-card{padding:36px 28px}
-    .title{font-size:28px}
-    .logo{font-size:28px}
-    .subtitle{font-size:15px}
-    .actions{gap:10px}
-    .enter-btn{padding:12px 24px; font-size:15px}
-    .theme-toggle{padding:10px 16px; font-size:13px}
-}
-
-@media (max-width:640px){
-    .welcome-hero{padding:20px}
-    .hero-card{padding:28px 20px}
-    .title{font-size:24px}
-    .logo{font-size:22px}
-    .subtitle{font-size:14px; margin-bottom:20px}
-    .actions{flex-direction:column; width:100%; gap:10px}
-    .enter-btn{width:100%}
-    .theme-toggle{width:100%}
-}
-
-/* accessibility focus */
-.enter-btn:focus, .theme-toggle:focus{outline:3px solid rgba(102,248,89,0.35); outline-offset:4px}
-
-/* accessibility high contrast mode support */
-@media (prefers-contrast: more) {
-    .hero-card{background:linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.08))}
-    .logo, .title{color:#ffffff}
-    .subtitle{color:#e0e8f0}
-}
-
-/* reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-    * {animation-duration: 0.01ms !important; transition-duration: 0.01ms !important}
-}
-
-/* small legacy selectors to keep compatibility with other pages */
-button{font-family:inherit}
-img{max-width:100%; height:auto}
-a{color:inherit}
-html{scroll-behavior:smooth}
