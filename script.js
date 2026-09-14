@@ -12,8 +12,16 @@ if (isTVPage) {
     let measuredSpeed = 0; // MB/s smoothed
     let touchStartX = 0;
     let wasFullscreen = false;
+    const LOCAL_VIDEO_CHANNEL = {
+        id: 0,
+        name: 'ASD Video',
+        url: './ssstik.io_@syedraihan586_1789386148571.mp4',
+        type: 'video/mp4',
+        logo: './pori.jpg'
+    };
     // fallback channels (used when Supabase is unavailable)
     const DEFAULT_CHANNELS = [
+        LOCAL_VIDEO_CHANNEL,
         { id: 1, name: 'Demo News', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', type: 'm3u8', logo: 'https://via.placeholder.com/90?text=News' },
         { id: 2, name: 'Demo Music', url: 'https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8', type: 'm3u8', logo: 'https://via.placeholder.com/90?text=Music' },
         { id: 3, name: 'Demo Tube', url: 'https://www.youtube.com/watch?v=ysz5S6PUM-U', type: 'youtube', logo: 'https://via.placeholder.com/90?text=YouTube' }
@@ -177,19 +185,25 @@ async function initApp() {
     }
 
     async function fetchChannels() {
+        let fetchedChannels = [];
+
         if (!_supabase) {
             console.warn('Supabase client not available — using DEFAULT_CHANNELS fallback');
-            channels = DEFAULT_CHANNELS.slice();
+            fetchedChannels = DEFAULT_CHANNELS.slice();
         } else {
             let { data, error } = await _supabase.from('channels').select('*').order('id', { ascending: true });
             if (error) {
                 console.error("Supabase Error:", error);
-                // fallback to default channels when supabase request fails
-                channels = DEFAULT_CHANNELS.slice();
+                fetchedChannels = DEFAULT_CHANNELS.slice();
             } else {
-                channels = data || [];
+                fetchedChannels = Array.isArray(data) ? data : [];
             }
         }
+
+        const filtered = fetchedChannels.filter((ch) => ch && ch.url && ch.url.trim());
+        const deduped = filtered.filter((ch) => ch.url !== LOCAL_VIDEO_CHANNEL.url);
+        channels = [LOCAL_VIDEO_CHANNEL, ...deduped];
+
         if (channels.length > 0) {
             displayChannels(channels);
             // animate channel list with stagger
@@ -392,7 +406,9 @@ function getYouTubeId(url) {
                     settings: ['quality', 'speed'],
                 };
 
-                if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+                const isDirectVideoSource = type === 'video/mp4' || /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url) || /video\/mp4/i.test(type || '');
+
+                if (typeof Hls !== 'undefined' && Hls.isSupported() && !isDirectVideoSource && /\.m3u8($|\?)/i.test(url)) {
                     hls = new Hls({
                         enableWorker: true,
                         lowLatencyMode: true,
@@ -445,6 +461,7 @@ function getYouTubeId(url) {
                         return;
                     }
                     video.src = url;
+                    video.type = isDirectVideoSource ? 'video/mp4' : (type === 'm3u8' ? 'application/vnd.apple.mpegurl' : type);
                     player = new Plyr(video, defaultOptions);
                     video.play().catch(() => console.log('Autoplay blocked'));
                     try { video.muted = false; } catch (e) {}
@@ -615,6 +632,31 @@ function getYouTubeId(url) {
 /* Welcome page: subtle animations and theme toggle */
 (function(){
     document.addEventListener('DOMContentLoaded', () => {
+        const particleLayer = document.getElementById('bg-particles') || document.createElement('div');
+        particleLayer.id = 'bg-particles';
+        particleLayer.setAttribute('aria-hidden', 'true');
+        if (!document.getElementById('bg-particles')) {
+            document.body.appendChild(particleLayer);
+        }
+
+        const particleCount = 1200;
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('span');
+            particle.className = 'particle';
+
+            const size = Math.random() * 4 + 1.2;
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            particle.style.left = `${Math.random() * 100}%`;
+            particle.style.top = `${Math.random() * 100}%`;
+            particle.style.setProperty('--x', `${(Math.random() - 0.5) * 80}px`);
+            particle.style.setProperty('--y', `${(Math.random() - 0.5) * 70}px`);
+            particle.style.setProperty('--dur', `${Math.random() * 8 + 5}s`);
+            particle.style.animationDelay = `${Math.random() * 8}s`;
+            particle.style.opacity = `${Math.random() * 0.7 + 0.15}`;
+            particleLayer.appendChild(particle);
+        }
+
         const hero = document.querySelector('.hero-card');
         if (hero) setTimeout(() => hero.classList.add('visible'), 120);
 
