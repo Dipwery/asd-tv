@@ -1,24 +1,36 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASD TV — স্বাগতম</title>
+    <title>A quiet prayer — ASD TV</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styl.css">
 </head>
 <body>
     <main class="welcome-hero" role="main">
+        <div class="ambient-glow" aria-hidden="true"></div>
+        <div class="rain" aria-hidden="true"></div>
         <div class="hero-card">
-            
-            
-            <div class="">
-                <a class="enter-btn" href="tv.html" title="টিভি প্লেয়ার খুলুন">টিভি দেখতে যান</a>
+            <figure class="campus-photo">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/8/86/Barisal_Polytechnic_Institute_at_rainy_day.jpg" alt="বরিশাল পলিটেকনিক ইনস্টিটিউটের বৃষ্টির দিনের ছবি">
+                <figcaption>বরিশাল পলিটেকনিক ইনস্টিটিউট</figcaption>
+            </figure>
+            <div class="eyebrow"><span class="pulse-dot"></span> a quiet request from my heart</div>
+            <div class="heart-mark" aria-hidden="true">♡</div>
+            <div class="message">
+                <p class="kicker">Please pray for me</p>
+                <h1>I am standing at the beginning of a new chapter.</h1>
+                <p class="body-copy">As I apply for my diploma admission, I carry a little hope and a lot of uncertainty. If you can, please keep me in your prayers.</p>
+                <p class="rotating-line" aria-live="polite">May courage find me.</p>
             </div>
+            <div class="actions">
+                <button class="pray-btn" id="prayButton" type="button"><span>♡</span> I prayed for you</button>
+                <a class="enter-btn" href="tv.html" title="Open the TV player">Enter ASD TV <span>→</span></a>
+            </div>
+            <p class="prayer-count"><strong id="prayerCount">0</strong> kind hearts are with me</p>
         </div>
-        <div class="bg-shapes" aria-hidden="true">
-
-        </div>
+        <p class="signature">thank you for remembering me</p>
     </main>
 
     <script src="script.js"></script>

@@ -62,12 +62,42 @@ if (isTVPage) {
     window.setupChannelClickDelegation = window.setupChannelClickDelegation || function(){};
 
     document.addEventListener('DOMContentLoaded', () => {
+        initAdmissionCountdown();
         try { initProgressBar(); } catch(e){ console.error('initProgressBar error:', e); }
         try { initApp(); } catch(e){ console.error('initApp error:', e); }
         try { if (typeof setupKeyboard === 'function') setupKeyboard(); } catch(e){ console.error('setupKeyboard error:', e); }
         try { if (typeof setupSwipeControls === 'function') setupSwipeControls(); } catch(e){ console.error('setupSwipeControls error:', e); }
         try { if (typeof setupChannelClickDelegation === 'function') setupChannelClickDelegation(); } catch(e){ console.error('setupChannelClickDelegation error:', e); }
     });
+
+    function initAdmissionCountdown() {
+        const target = new Date('2026-09-26T00:00:00');
+        const days = document.getElementById('countdownDays');
+        const hours = document.getElementById('countdownHours');
+        const minutes = document.getElementById('countdownMinutes');
+        const seconds = document.getElementById('countdownSeconds');
+        const status = document.getElementById('countdownStatus');
+        if (!days || !hours || !minutes || !seconds || !status) return;
+
+        const update = () => {
+            const remaining = Math.max(0, target.getTime() - Date.now());
+            const totalSeconds = Math.floor(remaining / 1000);
+            const dayValue = Math.floor(totalSeconds / 86400);
+            const hourValue = Math.floor((totalSeconds % 86400) / 3600);
+            const minuteValue = Math.floor((totalSeconds % 3600) / 60);
+            const secondValue = totalSeconds % 60;
+            days.textContent = String(dayValue).padStart(2, '0');
+            hours.textContent = String(hourValue).padStart(2, '0');
+            minutes.textContent = String(minuteValue).padStart(2, '0');
+            seconds.textContent = String(secondValue).padStart(2, '0');
+            if (remaining === 0) {
+                status.textContent = 'The admission day has arrived';
+            }
+        };
+
+        update();
+        setInterval(update, 1000);
+    }
 
     function setupChannelClickDelegation(){
         try{
@@ -587,6 +617,34 @@ function getYouTubeId(url) {
     document.addEventListener('DOMContentLoaded', () => {
         const hero = document.querySelector('.hero-card');
         if (hero) setTimeout(() => hero.classList.add('visible'), 120);
+
+        const prayButton = document.getElementById('prayButton');
+        const prayerCount = document.getElementById('prayerCount');
+        if (prayButton && prayerCount) {
+            const savedCount = Number(localStorage.getItem('prayerCount') || 0);
+            prayerCount.textContent = savedCount;
+            prayButton.addEventListener('click', () => {
+                const nextCount = Number(prayerCount.textContent) + 1;
+                prayerCount.textContent = nextCount;
+                localStorage.setItem('prayerCount', String(nextCount));
+                prayButton.classList.add('is-prayed');
+                prayButton.innerHTML = '<span>♥</span> Thank you for praying';
+            });
+        }
+
+        const rotatingLine = document.querySelector('.rotating-line');
+        if (rotatingLine) {
+            const lines = ['May courage find me.', 'May the door open gently.', 'May I be strong enough.', 'May better days come.'];
+            let lineIndex = 0;
+            setInterval(() => {
+                rotatingLine.style.opacity = '0';
+                setTimeout(() => {
+                    lineIndex = (lineIndex + 1) % lines.length;
+                    rotatingLine.textContent = lines[lineIndex];
+                    rotatingLine.style.opacity = '1';
+                }, 250);
+            }, 3500);
+        }
 
         const themeToggle = document.getElementById('themeToggle');
         if (themeToggle) {
