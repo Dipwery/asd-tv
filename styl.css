@@ -110,6 +110,8 @@ h1 { font-family: Georgia, serif; font-size: clamp(32px, 6vw, 54px); font-weight
 .prayer-count { margin: 25px 0 0; letter-spacing: 1px; text-transform: none; }
 .prayer-count strong { color: var(--soft-rose); font-size: 16px; }
 .signature { position: absolute; bottom: 20px; margin: 0; }
+.background-audio-player { position: fixed; left: -220px; bottom: 0; width: 200px; height: 200px; overflow: hidden; pointer-events: none; }
+.audio-toggle:disabled { cursor: wait; opacity: .7; }
 @keyframes breathe { 50% { transform: scale(1.2); opacity: .65; } }
 @keyframes rainfall { to { background-position: 90px 300px; } }
 @keyframes heartbeat { 0%, 100% { transform: scale(1); } 10% { transform: scale(1.1); } 20% { transform: scale(1); } }
