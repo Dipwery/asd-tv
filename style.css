@@ -11,7 +11,7 @@
 
 body {
     margin: 0;
-    background: linear-gradient(rgba(5, 6, 14, .84), rgba(5, 6, 14, .94)), url('https://upload.wikimedia.org/wikipedia/commons/8/86/Barisal_Polytechnic_Institute_at_rainy_day.jpg') center / cover fixed no-repeat;
+    background: linear-gradient(rgba(5, 6, 14, .84), rgba(5, 6, 14, .94)), url('pori.jpg') center / cover fixed no-repeat;
     color: var(--text-color);
     font-family: 'Inter', sans-serif;
     min-height: 100vh;
@@ -174,7 +174,6 @@ nav {
 
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* stream title marquee */
 .stream-details h1 {
     display: flex;
     align-items: center;
@@ -188,22 +187,17 @@ nav {
 .stream-title{display:inline-block; white-space:nowrap; transform:translateX(0); transition:transform 10s linear}
 .stream-title.marquee{transform:translateX(calc(-100% - 20px))}
 
-/* channel list entrance */
 .channel-card{opacity:0; transform:translateY(10px) scale(.98); transition:transform .45s cubic-bezier(.2,.9,.2,1), opacity .45s}
 .channel-card.show{opacity:1; transform:none}
 .channel-card:nth-child(odd){--delay:calc(var(--i) * 40ms)}
 
-/* skeleton for player */
 .skeleton{background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.05), rgba(255,255,255,0.02)); animation:shimmer 1.6s infinite}
 @keyframes shimmer{0%{background-position:-200px 0}100%{background-position:200px 0}}
 
-/* subtle hover ripple */
 .channel-card:active{transform:scale(.985)}
 
-/* small tweaks */
 .stream-details{display:flex; align-items:center; gap:10px; margin-top:12px}
 
-/* Ensure video/iframe always fill the wrapper */
 .player-wrapper video, .player-wrapper iframe{
     width:100%;
     height:100%;
@@ -394,7 +388,6 @@ video:fullscreen, iframe:fullscreen {
 }
 .speed.hidden{opacity:0}
 
-/* Flow blob animation (liquid-like transfer) */
 .flow-blob{
     position:fixed;
     pointer-events:none;
@@ -406,7 +399,6 @@ video:fullscreen, iframe:fullscreen {
     filter: blur(0.6px);
 }
 
-/* small ripple burst at destination */
 .flow-burst{
     position:fixed; pointer-events:none; border-radius:50%; background:rgba(102,248,89,0.12); z-index:99998; mix-blend-mode:screen;
 }

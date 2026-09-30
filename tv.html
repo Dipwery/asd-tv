@@ -11,24 +11,6 @@
 </head>
 <body onclick="forceUnlimitedPop()">
 
-    <section class="countdown-banner" aria-labelledby="countdown-title">
-        <div class="countdown-heading">
-            <span class="countdown-icon" aria-hidden="true">♡</span>
-            <div>
-                <p class="countdown-label">বরিশাল পলিটেকনিক • কম্পিউটার বিজ্ঞান ও প্রযুক্তি বিভাগ</p>
-                <h1 id="countdown-title">ডিপ্লোমা ভর্তি ফলাফল</h1>
-                <p class="countdown-message">সবাই আমাকে আশীর্বাদ করবেন</p>
-            </div>
-        </div>
-        <div class="countdown-clock" id="admissionCountdown" aria-live="polite">
-            <div><strong id="countdownDays">00</strong><span>দিন</span></div>
-            <div><strong id="countdownHours">00</strong><span>ঘণ্টা</span></div>
-            <div><strong id="countdownMinutes">00</strong><span>মিনিট</span></div>
-            <div><strong id="countdownSeconds">00</strong><span>সেকেন্ড</span></div>
-        </div>
-        <p class="countdown-status" id="countdownStatus">২৯ সেপ্টেম্বর ২০২৬ পর্যন্ত</p>
-    </section>
-
     <nav>
         <div class="brand"><i></i> ASD<span>TV</span></div>
         <div class="search-container">
@@ -42,10 +24,8 @@
             <div class="player-wrapper">
                 <video id="player" controls playsinline preload="auto"></video>
             </div>
-            <p class="campus-photo-credit">বরিশাল পলিটেকনিক ইনস্টিটিউট • ছবি: উইকিমিডিয়া কমন্স</p>
             <div class="stream-details" style="display: flex; align-items:center; gap:12px;">
-                <h1><span class="live-tag">সরাসরি</span> <span id="stream-title">লোডিং...</span></h1>
-                <div id="speedIndicator" class="speed">— MB/s</div>
+                <h1><span class="live-tag">সরাসরি</span> <span id="stream-title"></span></h1>
                 <div style="display:flex; gap:8px; align-items:center; margin-left:8px;">
                 </div>
             </div>

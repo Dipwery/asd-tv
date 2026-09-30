@@ -1,4 +1,3 @@
-// Only run TV-related initialization on the TV page (tv.html) or when player exists
 const isTVPage =
   window.location.pathname.endsWith("tv.html") ||
   !!document.querySelector(".player-wrapper");
@@ -15,10 +14,8 @@ if (isTVPage) {
   let hls, player;
   let channels = [];
   let currentChannelIndex = 0;
-  let measuredSpeed = 0; // MB/s smoothed
   let touchStartX = 0;
   let wasFullscreen = false;
-  // fallback channels (used when Supabase is unavailable)
   const DEFAULT_CHANNELS = [
     {
       id: 1,
@@ -42,114 +39,14 @@ if (isTVPage) {
       logo: "https://via.placeholder.com/90?text=ভিডিও",
     },
   ];
-  // provide a no-op for inline handler used in tv.html body
   window.forceUnlimitedPop = window.forceUnlimitedPop || function () {};
-  // global XHR byte counter (fallback/robust measurement)
-  window.__xhr_total_bytes = 0;
-  (function initXhrTracker() {
-    try {
-      const origSend = XMLHttpRequest.prototype.send;
-      XMLHttpRequest.prototype.send = function () {
-        try {
-          this._lastLoaded = 0;
-          this.addEventListener("progress", (e) => {
-            const loaded = e.loaded || 0;
-            const delta = Math.max(0, loaded - (this._lastLoaded || 0));
-            this._lastLoaded = loaded;
-            window.__xhr_total_bytes = (window.__xhr_total_bytes || 0) + delta;
-          });
-        } catch (e) {}
-        return origSend.apply(this, arguments);
-      };
-    } catch (e) {}
-  })();
-
-  // interval to compute MB/s from XHR bytes (1s smoothing)
-  (function startSpeedTicker() {
-    let lastTotal = 0;
-    setInterval(() => {
-      const total = window.__xhr_total_bytes || 0;
-      const delta = Math.max(0, total - lastTotal);
-      lastTotal = total;
-      const mbps = delta / (1024 * 1024);
-      // combine with HLS measuredSpeed if present; smooth
-      const combined =
-        measuredSpeed && measuredSpeed > 0
-          ? measuredSpeed * 0.5 + mbps * 0.5
-          : mbps;
-      measuredSpeed =
-        measuredSpeed === 0 ? combined : measuredSpeed * 0.75 + combined * 0.25;
-      const el = document.getElementById("speedIndicator");
-      if (el)
-        el.innerText =
-          measuredSpeed > 0.005 ? measuredSpeed.toFixed(2) + " MB/s" : "— MB/s";
-    }, 1000);
-  })();
-
-  // Define safe defaults in case functions aren't available yet
-  window.setupKeyboard = window.setupKeyboard || function () {};
-  window.setupSwipeControls = window.setupSwipeControls || function () {};
-  window.setupChannelClickDelegation =
-    window.setupChannelClickDelegation || function () {};
 
   document.addEventListener("DOMContentLoaded", () => {
-    initAdmissionCountdown();
-    try {
-      initProgressBar();
-    } catch (e) {
-      console.error("initProgressBar error:", e);
-    }
-    try {
-      initApp();
-    } catch (e) {
-      console.error("initApp error:", e);
-    }
-    try {
-      if (typeof setupKeyboard === "function") setupKeyboard();
-    } catch (e) {
-      console.error("setupKeyboard error:", e);
-    }
-    try {
-      if (typeof setupSwipeControls === "function") setupSwipeControls();
-    } catch (e) {
-      console.error("setupSwipeControls error:", e);
-    }
-    try {
-      if (typeof setupChannelClickDelegation === "function")
-        setupChannelClickDelegation();
-    } catch (e) {
-      console.error("setupChannelClickDelegation error:", e);
-    }
+    initApp();
+    setupKeyboard();
+    setupSwipeControls();
+    setupChannelClickDelegation();
   });
-
-  function initAdmissionCountdown() {
-    const target = new Date("2026-09-29T00:00:00");
-    const days = document.getElementById("countdownDays");
-    const hours = document.getElementById("countdownHours");
-    const minutes = document.getElementById("countdownMinutes");
-    const seconds = document.getElementById("countdownSeconds");
-    const status = document.getElementById("countdownStatus");
-    if (!days || !hours || !minutes || !seconds || !status) return;
-
-    const update = () => {
-      const remaining = Math.max(0, target.getTime() - Date.now());
-      const totalSeconds = Math.floor(remaining / 1000);
-      const dayValue = Math.floor(totalSeconds / 86400);
-      const hourValue = Math.floor((totalSeconds % 86400) / 3600);
-      const minuteValue = Math.floor((totalSeconds % 3600) / 60);
-      const secondValue = totalSeconds % 60;
-      days.textContent = String(dayValue).padStart(2, "0");
-      hours.textContent = String(hourValue).padStart(2, "0");
-      minutes.textContent = String(minuteValue).padStart(2, "0");
-      seconds.textContent = String(secondValue).padStart(2, "0");
-      if (remaining === 0) {
-        status.textContent = "ভর্তির দিন এসে গেছে";
-      }
-    };
-
-    update();
-    setInterval(update, 1000);
-  }
 
   function setupChannelClickDelegation() {
     try {
@@ -160,7 +57,6 @@ if (isTVPage) {
         if (!card) return;
         handleChannelClick(card);
       });
-      // keyboard support
       list.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
@@ -194,19 +90,6 @@ if (isTVPage) {
     }
   }
 
-  function initProgressBar() {
-    const progressBar = document.querySelector("#progress-bar");
-    if (!progressBar) return;
-
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 20;
-      if (progress > 100) progress = 100;
-      progressBar.style.width = progress + "%";
-      if (progress >= 100) clearInterval(interval);
-    }, 100);
-  }
-
   async function initApp() {
     loadNotice();
     fetchChannels();
@@ -231,9 +114,7 @@ if (isTVPage) {
           if (noticeText) noticeText.innerText = data.value;
         }
       }
-    } catch (e) {
-      // Ignore missing tables / unavailable notice config.
-    }
+    } catch (e) {}
   }
 
   async function fetchChannels() {
@@ -264,7 +145,6 @@ if (isTVPage) {
 
     if (channels.length > 0) {
       displayChannels(channels);
-      // animate channel list with stagger
       document
         .querySelectorAll("#channels-list .channel-card")
         .forEach((el, idx) => {
@@ -316,8 +196,6 @@ if (isTVPage) {
     return div.innerHTML;
   }
 
-  // YouTube URL/ID থেকে ভিডিও আইডি বের করার ফাংশন (Error 153 ফিক্স করার জন্য)
-  // Animate a liquid-like blob from a source element to the player, then call callback
   function animateFlow(fromElement, options = {}, callback) {
     try {
       try {
@@ -348,7 +226,6 @@ if (isTVPage) {
       const destScale = Math.max((toRect.width * 1.2) / size, 6);
       const duration = options.duration || 700;
 
-      // animate blob moving and growing
       const keyframes = [
         { transform: "translate(0px, 0px) scale(1)", opacity: 1 },
         {
@@ -371,7 +248,6 @@ if (isTVPage) {
           console.log("animateFlow finished");
         } catch (e) {}
         try {
-          // small burst at destination
           const burst = document.createElement("div");
           burst.className = "flow-burst";
           const bsize = Math.max(80, toRect.width * 0.3);
@@ -438,26 +314,15 @@ if (isTVPage) {
         const titleEl = document.getElementById("stream-title");
         if (titleEl) titleEl.innerText = name;
 
-        let overlay = wrapper.querySelector(".player-overlay");
-        if (!overlay) {
-          overlay = document.createElement("div");
-          overlay.className = "player-overlay";
-          overlay.innerHTML =
-            '<div class="player-loader" aria-hidden="true"></div>';
-          wrapper.appendChild(overlay);
-        }
-        overlay.style.opacity = "1";
-        overlay.style.transition = "opacity .25s ease";
+        const overlay = null;
 
         document
           .querySelectorAll(".channel-card")
           .forEach((c) => c.classList.remove("active"));
-        // Prefer the clicked element, otherwise try to find a matching card by index or url so programmatic plays also update UI
         let activeCard = null;
         if (element) {
           activeCard = element;
         } else {
-          // try by data-index first
           try {
             activeCard =
               document.querySelector(
@@ -488,7 +353,6 @@ if (isTVPage) {
         if (type === "youtube") {
           const videoId = getYouTubeId(url);
           wrapper.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&enablejsapi=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width:100%; height:100%; aspect-ratio:16/9; border-radius:20px;"></iframe>`;
-          setTimeout(() => (overlay.style.opacity = "0"), 600);
           return;
         }
 
@@ -496,7 +360,6 @@ if (isTVPage) {
           wrapper.innerHTML = url.includes("<iframe")
             ? url
             : `<iframe src="${url}" frameborder="0" allow="autoplay" allowfullscreen style="width:100%; height:100%; aspect-ratio:16/9; border-radius:20px;"></iframe>`;
-          setTimeout(() => (overlay.style.opacity = "0"), 600);
           return;
         }
 
@@ -584,35 +447,9 @@ if (isTVPage) {
             maxBufferSize: 60 * 1024 * 1024,
           });
 
-          try {
-            hls.on(Hls.Events.FRAG_LOADED, function (event, data) {
-              try {
-                const stats = data.stats || {};
-                const bytes = stats.loaded || 0;
-                const trequest = stats.trequest || 0;
-                const tload = stats.tload || 0;
-                const durationMs = tload - trequest;
-                if (durationMs > 0 && bytes > 0) {
-                  const bytesPerSec = bytes / (durationMs / 1000);
-                  const mbPerSec = bytesPerSec / (1024 * 1024);
-                  measuredSpeed =
-                    measuredSpeed === 0
-                      ? mbPerSec
-                      : measuredSpeed * 0.7 + mbPerSec * 0.3;
-                  const el = document.getElementById("speedIndicator");
-                  if (el)
-                    el.innerText =
-                      measuredSpeed > 0
-                        ? measuredSpeed.toFixed(2) + " MB/s"
-                        : "— MB/s";
-                }
-              } catch (e) {}
-            });
-          } catch (e) {}
-
           if (!url || typeof url !== "string" || url.trim().length === 0) {
             console.error("Invalid URL for HLS:", url);
-            overlay.style.opacity = "0";
+            if (overlay) overlay.style.opacity = "0";
             if (titleEl)
               titleEl.innerText = "চ্যানেলের ঠিকানা সঠিক নয়: " + name;
             return;
@@ -631,7 +468,7 @@ if (isTVPage) {
         } else {
           if (!url || typeof url !== "string" || url.trim().length === 0) {
             console.error("Invalid URL for fallback player:", url);
-            overlay.style.opacity = "0";
+            if (overlay) overlay.style.opacity = "0";
             if (titleEl)
               titleEl.innerText = "চ্যানেলের ঠিকানা সঠিক নয়: " + name;
             return;
@@ -790,162 +627,10 @@ if (isTVPage) {
         .from("user_stats")
         .update({ total_seconds: currentSeconds + 1 })
         .eq("username", "1");
-    } catch (e) {
-      // Ignore missing table / 404s when Supabase tables are not configured yet.
-    }
+    } catch (e) {}
   }
   if (!window.__tvStatsLoopStarted) {
     window.__tvStatsLoopStarted = true;
     setInterval(dataloop, 1000);
   }
 }
-
-/* Welcome page: subtle animations and theme toggle */
-(function () {
-  document.addEventListener("DOMContentLoaded", () => {
-    const hero = document.querySelector(".hero-card");
-    if (hero) setTimeout(() => hero.classList.add("visible"), 120);
-
-    const prayButton = document.getElementById("prayButton");
-    const prayerCount = document.getElementById("prayerCount");
-    if (prayButton && prayerCount) {
-      const savedCount = Number(localStorage.getItem("prayerCount") || 0);
-      prayerCount.textContent = savedCount;
-      prayButton.addEventListener("click", () => {
-        const nextCount = Number(prayerCount.textContent) + 1;
-        prayerCount.textContent = nextCount;
-        localStorage.setItem("prayerCount", String(nextCount));
-        prayButton.classList.add("is-prayed");
-        prayButton.innerHTML = "<span>♥</span> Thank you for praying";
-      });
-    }
-
-    const audioToggle = document.getElementById("audioToggle");
-    const audioHost = document.getElementById("backgroundAudioPlayer");
-    if (audioToggle && audioHost) {
-      const videoId = "mww-8n8vibg";
-      let audioPlayer;
-      let audioUnavailable = false;
-      const offerYouTubeLink = () => {
-        audioUnavailable = true;
-        audioToggle.textContent = "Open on YouTube";
-        audioToggle.setAttribute(
-          "aria-label",
-          "Open background audio on YouTube",
-        );
-        audioToggle.disabled = false;
-      };
-
-      audioToggle.addEventListener("click", () => {
-        if (audioUnavailable) {
-          window.open(
-            `https://youtu.be/${videoId}`,
-            "_blank",
-            "noopener,noreferrer",
-          );
-          return;
-        }
-        if (!audioPlayer) return;
-        if (audioPlayer.getPlayerState() === window.YT.PlayerState.PLAYING) {
-          audioPlayer.pauseVideo();
-        } else {
-          audioPlayer.playVideo();
-          window.setTimeout(() => {
-            if (
-              !audioUnavailable &&
-              audioPlayer.getPlayerState() !== window.YT.PlayerState.PLAYING
-            ) {
-              offerYouTubeLink();
-            }
-          }, 8000);
-        }
-      });
-
-      const initializeAudioPlayer = () => {
-        if (!window.YT?.Player) return;
-        audioPlayer = new window.YT.Player(audioHost, {
-          height: "200",
-          width: "200",
-          videoId,
-          playerVars: {
-            autoplay: 1,
-            controls: 0,
-            loop: 1,
-            playlist: videoId,
-            playsinline: 1,
-          },
-          events: {
-            onReady: (event) => {
-              audioToggle.disabled = false;
-              event.target.playVideo();
-            },
-            onStateChange: (event) => {
-              if (audioUnavailable) return;
-              const isPlaying = event.data === window.YT.PlayerState.PLAYING;
-              audioToggle.textContent = isPlaying
-                ? "♫ Pause audio"
-                : "♫ Play audio";
-              audioToggle.setAttribute(
-                "aria-label",
-                `${isPlaying ? "Pause" : "Play"} background audio`,
-              );
-              audioToggle.setAttribute("aria-pressed", String(isPlaying));
-            },
-            onError: () => {
-              offerYouTubeLink();
-            },
-          },
-        });
-
-        const playerFrame = document.getElementById("backgroundAudioPlayer");
-        if (playerFrame instanceof HTMLIFrameElement) {
-          playerFrame.allow = "autoplay; encrypted-media; picture-in-picture";
-        }
-        audioToggle.disabled = false;
-        audioToggle.textContent = "♫ Play audio";
-      };
-
-      const apiScript = document.createElement("script");
-      apiScript.src = "https://www.youtube.com/iframe_api";
-      apiScript.onerror = offerYouTubeLink;
-      window.onYouTubeIframeAPIReady = initializeAudioPlayer;
-      document.head.appendChild(apiScript);
-    }
-
-    const rotatingLine = document.querySelector(".rotating-line");
-    if (rotatingLine) {
-      const lines = [
-        "May courage find me.",
-        "May the door open gently.",
-        "May I be strong enough.",
-        "May better days come.",
-      ];
-      let lineIndex = 0;
-      setInterval(() => {
-        rotatingLine.style.opacity = "0";
-        setTimeout(() => {
-          lineIndex = (lineIndex + 1) % lines.length;
-          rotatingLine.textContent = lines[lineIndex];
-          rotatingLine.style.opacity = "1";
-        }, 250);
-      }, 3500);
-    }
-
-    const themeToggle = document.getElementById("themeToggle");
-    if (themeToggle) {
-      themeToggle.addEventListener("click", () => {
-        const isLight =
-          document.documentElement.classList.toggle("light-theme");
-        if (isLight) {
-          document.documentElement.style.setProperty("--bg", "#f6f8fb");
-          document.documentElement.style.setProperty("--card", "#ffffffcc");
-          document.documentElement.style.setProperty("--text", "#071226");
-        } else {
-          document.documentElement.style.removeProperty("--bg");
-          document.documentElement.style.removeProperty("--card");
-          document.documentElement.style.removeProperty("--text");
-        }
-      });
-    }
-  });
-})();
